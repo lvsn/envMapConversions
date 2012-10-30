@@ -1,7 +1,7 @@
 Readme
 ======
 
-This package contains functions that convert to and from different types 
+This package contains MATLAB functions that convert to and from different types 
 of environment map representations. Most of the code was implemented 
 following the book:
 
