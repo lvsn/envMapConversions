@@ -18,14 +18,14 @@ Coordinates
 
 The world coordinates `(dx,dy,dz)` have the following reference frame:
 
-<blockquote><code><pre>
+<pre><code>
      ^ y
      |
      |
      .----> x
     /
 z  v
-</pre></code></blockquote>
+</code></pre>
   
 The camera would be looking in the negative z direction.
 
