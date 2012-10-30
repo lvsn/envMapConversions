@@ -18,12 +18,12 @@ Coordinates
 
 The world coordinates `(dx,dy,dz)` have the following reference frame:
 
-       ^ y
-       |
-       |
-       .----> x
-      /
-  z  v
+>       ^ y
+>       |
+>       |
+>       .----> x
+>      /
+>  z  v
   
 The camera would be looking in the negative z direction.
 
@@ -36,7 +36,7 @@ range. `im2double` should do the trick.
 History
 -------
 
-10/30/12: Moved to github. Refer to commit messages for updates.
+- 10/30/12: Moved to github. Refer to commit messages for updates.
 
-04/19/11: Fixed small but in envmapWorld2SkyAngular.m which prevented 
-correct conversion from skyAngular to latlong format.
+- 04/19/11: Fixed small but in envmapWorld2SkyAngular.m which prevented 
+  correct conversion from skyAngular to latlong format.
