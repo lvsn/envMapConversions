@@ -1,4 +1,4 @@
-function [uSkyAngular, vSkyAngular] = envmapWorld2SkyAngularAngles(dx, dy, dz)
+function [uSkyAngular, vSkyAngular, indPos] = envmapWorld2SkyAngularAngles(dx, dy, dz)
 % Converts (x,y,z) coordinates to "sky angular" format
 %
 %   [uSkyAngular, vSkyAngular] = envmapWorld2SkyAngularAngles(dx, dy, dz)

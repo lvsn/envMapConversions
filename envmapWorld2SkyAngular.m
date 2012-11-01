@@ -17,7 +17,7 @@ function envMap = envmapWorld2SkyAngular(inputEnvMap, dx, dy, dz)
 % Jean-Francois Lalonde
 
 % Get the angles
-[uAngular, vAngular] = envmapWorld2SkyAngularAngles(dx, dy, dz);
+[uAngular, vAngular, indPos] = envmapWorld2SkyAngularAngles(dx, dy, dz);
 
 % Interpolate to get the desired pixel values
 envMap = zeros(size(dx,1), size(dx,2), size(inputEnvMap, 3));
