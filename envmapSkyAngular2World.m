@@ -9,7 +9,7 @@
 %  - [dx,dy,dz]: world directions
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [dx,dy,dz] = envmapSkyAngular2World(dim)
+function [dx,dy,dz,valid] = envmapSkyAngular2World(dim)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Copyright 2006-2009 Jean-Francois Lalonde
 % Carnegie Mellon University
@@ -26,4 +26,9 @@ phiAngular = pi/2.*sqrt((2.*u-1).^2 + (2.*v-1).^2); % zenith
 dx = sin(phiAngular).*cos(thetaAngular);
 dz = sin(phiAngular).*sin(thetaAngular);
 dy = cos(phiAngular);
+
+if nargout > 3
+    r = (u-0.5).^2 + (v-0.5).^2;
+    valid = r <= .25; % .5^2
+end
 
