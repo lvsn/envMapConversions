@@ -70,8 +70,8 @@ classdef EnvironmentMap
                 
             else
                 % we're given the image directly
-                assert(isdouble(varargin{1}), ...
-                    'First input must be an image in double format');
+                assert(isnumeric(varargin{1}), ...
+                    'First input must be an image');
                 assert(ndims(varargin{1}) <= 3, ...
                     'Can''t handle multi-dimensional environment maps');
                 
@@ -187,6 +187,40 @@ classdef EnvironmentMap
             
             e.format = tgtFormat;
             
+        end
+        
+        function [x, y, z, valid] = worldCoordinates(e)
+            % Returns the [x,y,z] world coordinates
+            [x, y, z, valid] = EnvironmentMap.worldCoordinatesStatic(e.format, e.nrows);
+        end
+
+    end
+    
+    methods (Static)
+                
+        function [x, y, z, valid] = worldCoordinatesStatic(format, dims)
+            % Returns the [x,y,z] world coordinates
+            
+            assert(isa(format, 'EnvironmentMapFormat'), ...
+                'Input format is expected to be of type ''EnvironmentMapFormat''.');
+
+            switch(format)
+                case EnvironmentMapFormat.LatLong
+                    [x, y, z, valid] = envmapLatLong2World(dims);
+                                        
+                case EnvironmentMapFormat.Angular
+                    [x, y, z, valid] = envmapAngular2World(dims);
+                    
+                case EnvironmentMapFormat.Cube
+                    [x, y, z, valid] = envmapCube2World(dims);
+                    
+                case EnvironmentMapFormat.SkyAngular
+                    [x, y, z, valid] = envmapSkyAngular2World(dims);
+
+                otherwise
+                    error('IlluminationModel:getWorldCoordinates', ...
+                        'Unsupported format: %s', format.char);
+            end
         end
     end
 end
