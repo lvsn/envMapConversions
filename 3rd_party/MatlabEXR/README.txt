@@ -1,3 +1,6 @@
+This code is from Micah Kimo Johnson.
+
+http://www.mit.edu/~kimo/software/
 
 Install ilmbase and openexr to default location /usr/local
 
