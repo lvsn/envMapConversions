@@ -67,7 +67,6 @@ classdef EnvironmentMap
                         
                 end
                 
-                
             else
                 % we're given the image directly
                 assert(isnumeric(varargin{1}), ...
@@ -100,23 +99,46 @@ classdef EnvironmentMap
         end
         
         function varargout = size(e, varargin)
-            varargout = size(e.data, varargin{:}); 
+            varargout{:} = size(e.data, varargin{:}); 
         end
         
         function e = imresize(e, varargin)
             e.data = imresize(e.data, varargin{:});
         end
         
-        function e = convertTo(e, tgtFormat)
+        function e = imfilter(e, varargin)
+            e.data = imfilter(e.data, varargin{:});
+        end
+        
+        function display(e)
+            fprintf('EnvironmentMap, [%dx%dx%d], %s\n', ...
+                e.nrows, e.ncols, e.nbands, e.format.char);
+        end
+        
+        function e = intensity(e)
+            % Returns intensity-version of the environment map
+            if e.nbands == 1
+                warning('EnvironmentMap:intensity', ...
+                    'Environment map already is intensity-only');
+            else
+                e.data = rgb2gray(e.data);
+            end
+        end
+            
+        
+        function e = convertTo(e, tgtFormat, tgtDim)
             % Converts the environment map to the specified format
             %
-            %   e = convertTo(e, tgtFormat)
+            %   e = convertTo(e, tgtFormat, tgtDim)
             %
             
             assert(isa(tgtFormat, 'EnvironmentMapFormat'), ...
                 'Format must be of type ''EnvironmentMapFormat''');
             
-            tgtDim = e.nrows;
+            if ~exist('tgtDim', 'var')
+                tgtDim = e.nrows;
+            end
+            
             
             switch (e.format)
                 case EnvironmentMapFormat.LatLong
