@@ -139,6 +139,12 @@ classdef EnvironmentMap
                 tgtDim = e.nrows;
             end
             
+            if tgtFormat == e.format
+                % we already have the right format! 
+                % Let's make sure we have the right size
+                e = imresize(e, [tgtDim NaN]);
+                return;
+            end
             
             switch (e.format)
                 case EnvironmentMapFormat.LatLong
