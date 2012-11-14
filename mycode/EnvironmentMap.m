@@ -126,7 +126,7 @@ classdef EnvironmentMap
         function e = convertTo(e, tgtFormat, tgtDim)
             % Converts the environment map to the specified format
             %
-            %   e = convertTo(e, tgtFormat, tgtDim)
+            %   e = convertTo(e, tgtFormat, <tgtDim>)
             %
             
             tgtFormat = EnvironmentMapFormat.format(tgtFormat);
