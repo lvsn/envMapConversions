@@ -14,26 +14,35 @@ classdef EnvironmentMapFormat
     
     methods (Static)
         
-        function f = str2format(str)
-            % Useful method to convert from string to class format
+        function f = format(input)
+            % Useful method to parse inputs for environment map formats
             %   
-            %   f = str2format(str)
+            %   f = format('formatName')
             %
-            switch lower(str)
-                case 'latlong'
-                    f = EnvironmentMapFormat.LatLong;
-                    
-                case 'angular'
-                    f = EnvironmentMapFormat.Angular;
-                    
-                case 'cube'
-                    f = EnvironmentMapFormat.Cube;
-                    
-                case 'skyangular'
-                    f = EnvironmentMapFormat.SkyAngular;
-                    
-                otherwise
-                    error('Unknown string: %s\n', str);
+            % Creates a format from a string. This will find the 'nearest'
+            % string. Note: might do crazy things if the input string is
+            % not "close" enough to the set of available options.
+            %
+            %   f = format(EnvironmentMapFormat.formatName)
+            %
+            % Simply returns the format directly. 
+            %
+            
+            if isa(input, 'EnvironmentMapFormat')
+                % we're good, just return the input
+                f = input;
+                
+            elseif ischar(input)
+                % find nearest string. 
+                % 
+                [members, names] = enumeration('EnvironmentMapFormat');
+                
+                dists = cellfun(@(s) strdist(lower(input), s), lower(names));
+                [~,mind] = min(dists);
+                
+                f = members(mind);
+            else
+                error('Unsupported input for format conversion.');
             end
         end
     end
