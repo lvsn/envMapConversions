@@ -158,7 +158,13 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.SkyAngular
                     e.data = envmapWorld2SkyAngular(e.data, dx, dy, dz);
-
+                    
+                case EnvironmentMapFormat.Octahedral
+                    e.data = envmapWorld2Octahedral(e.data, dx, dy, dz);
+                    
+                otherwise
+                    error('Conversion from %s to %s unsupported!', ...
+                        e.format.char, tgtFormat.char);
             end
             
             e.data(~valid(:,:,ones(1,e.nbands))) = 0;
@@ -192,6 +198,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.SkyAngular
                     [x, y, z, valid] = envmapSkyAngular2World(dims);
+                    
+                case EnvironmentMapFormat.Octahedral
+                    [x, y, z, valid] = envmapOctahedral2World(dims);
 
                 otherwise
                     error('IlluminationModel:getWorldCoordinates', ...

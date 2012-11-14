@@ -4,12 +4,13 @@ classdef EnvironmentMapFormat
     %   Currently:
     %   - LatLong (latitude-longitude)
     %   - Angular
-    %   - Cube
     %   - SkyAngular 
     %       (just the top half of the hemisphere, looking towards zenith)
+    %   - Cube
+    %   - Octahedral
     
     enumeration
-        LatLong, Angular, Cube, SkyAngular
+        LatLong, Angular, SkyAngular, Cube, Octahedral
     end
     
     methods (Static)
