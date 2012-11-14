@@ -142,75 +142,27 @@ classdef EnvironmentMap
                 return;
             end
             
+            % Get the world coordinates
+            [dx, dy, dz, valid] = EnvironmentMap.worldCoordinatesStatic(tgtFormat, tgtDim);
+            
+            % Get the environment map representation
             switch (e.format)
                 case EnvironmentMapFormat.LatLong
-                    switch tgtFormat
-                        case EnvironmentMapFormat.Angular
-                            e.data = envmapLatLong2Angular(e.data, tgtDim);
-                            
-                        case EnvironmentMapFormat.Cube
-                            e.data = envmapLatLong2Cube(e.data, tgtDim);
-                            
-                        case EnvironmentMapFormat.SkyAngular
-                            e.data = envmapLatLong2SkyAngular(e.data, tgtDim);
-                            
-                        otherwise
-                            error('Cannot convert from %s to %s\n', ...
-                                e.format.char, tgtFormat.char);
-                    end
+                    e.data = envmapWorld2LatLong(e.data, dx, dy, dz);
                     
                 case EnvironmentMapFormat.Angular
-                    switch tgtFormat
-                        case EnvironmentMapFormat.LatLong
-                            e.data = envmapAngular2LatLong(e.data, tgtDim);
-                            
-%                         case EnvironmentMapFormat.Cube
-%                             e.data = envmapAngular2Cube(e.data, tgtDim);
-                            
-%                         case EnvironmentMapFormat.SkyAngular
-%                             e.data = envmapAngular2SkyAngular(e.data, tgtDim);
-
-                        otherwise
-                            error('Cannot convert from %s to %s\n', ...
-                                e.format.char, tgtFormat.char);
-                    end
+                    e.data = envmapWorld2Angular(e.data, dx, dy, dz);
                     
                 case EnvironmentMapFormat.Cube
-                    switch tgtFormat
-%                         case EnvironmentMapFormat.LatLong
-%                             e.data = envmapCube2LatLong(e.data, tgtDim);
-                            
-                        case EnvironmentMapFormat.Angular
-                            e.data = envmapCube2Angular(e.data, tgtDim);
-                            
-%                         case EnvironmentMapFormat.SkyAngular
-%                             e.data = envmapCube2SkyAngular(e.data, tgtDim);
-
-                        otherwise
-                            error('Cannot convert from %s to %s\n', ...
-                                e.format.char, tgtFormat.char);
-                    end
+                    e.data = envmapWorld2Cube(e.data, dx, dy, dz);
                     
                 case EnvironmentMapFormat.SkyAngular
-                    switch tgtFormat
-                        case EnvironmentMapFormat.LatLong
-                            e.data = envmapSkyAngular2LatLong(e.data, tgtDim);
-                            
-%                         case EnvironmentMapFormat.Angular
-%                             e.data = envmapSkyAngular2Angular(e.data, tgtDim);
-                            
-%                         case EnvironmentMapFormat.Cube
-%                             e.data = envmapSkyAngular2Cube(e.data, tgtDim);
+                    e.data = envmapWorld2SkyAngular(e.data, dx, dy, dz);
 
-                        otherwise
-                            error('Cannot convert from %s to %s\n', ...
-                                e.format.char, tgtFormat.char);
-
-                    end
             end
             
-            e.format = tgtFormat;
-            
+            e.data(~valid(:,:,ones(1,e.nbands))) = 0;
+            e.format = tgtFormat;            
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
