@@ -43,9 +43,6 @@ classdef EnvironmentMap
             % associated format.
             
             assert(length(varargin)==2, 'Must have two inputs');
-            assert(isa(varargin{2}, 'EnvironmentMapFormat'), ...
-                'Second input must be of type ''EnvironmentMapFormat''');
-            
             if ischar(varargin{1})
                 % we're given the filename
                 filename = varargin{1};
@@ -77,7 +74,7 @@ classdef EnvironmentMap
                 e.data = im2double(varargin{1});
             end
             
-            e.format = lower(varargin{2});
+            e.format = EnvironmentMapFormat.format(varargin{2});
         end
         
         % getters for the dependent properties
@@ -132,8 +129,7 @@ classdef EnvironmentMap
             %   e = convertTo(e, tgtFormat, tgtDim)
             %
             
-            assert(isa(tgtFormat, 'EnvironmentMapFormat'), ...
-                'Format must be of type ''EnvironmentMapFormat''');
+            tgtFormat = EnvironmentMapFormat.format(tgtFormat);
             
             if ~exist('tgtDim', 'var')
                 tgtDim = e.nrows;
