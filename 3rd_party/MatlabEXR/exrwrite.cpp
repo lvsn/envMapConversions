@@ -147,9 +147,9 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[])
 
 		}
 
-		//RgbaOutputFile file(filename, xdim, ydim, mode);
-		//file.setFrameBuffer(px, 1, xdim);
-		//file.writePixels(ydim);
+		RgbaOutputFile file(filename, xdim, ydim, mode);
+		file.setFrameBuffer(px, 1, xdim);
+		file.writePixels(ydim);
 		mxFree(filename);
 	
 		delete[] px; 
