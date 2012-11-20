@@ -162,6 +162,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.Octahedral
                     e.data = envmapWorld2Octahedral(e.data, dx, dy, dz);
                     
+                case EnvironmentMapFormat.Sphere
+                    e.data = envmapWorld2Sphere(e.data, dx, dy, dz);
+                    
                 otherwise
                     error('Conversion from %s to %s unsupported!', ...
                         e.format.char, tgtFormat.char);
@@ -201,6 +204,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.Octahedral
                     [x, y, z, valid] = envmapOctahedral2World(dims);
+                    
+                case EnvironmentMapFormat.Sphere
+                    [x, y, z, valid] = envmapSphere2World(dims);
 
                 otherwise
                     error('IlluminationModel:getWorldCoordinates', ...

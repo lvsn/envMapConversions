@@ -8,9 +8,10 @@ classdef EnvironmentMapFormat
     %       (just the top half of the hemisphere, looking towards zenith)
     %   - Cube
     %   - Octahedral
+    %   - Sphere
     
     enumeration
-        LatLong, Angular, SkyAngular, Cube, Octahedral
+        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere
     end
     
     methods (Static)
