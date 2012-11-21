@@ -197,7 +197,10 @@ classdef EnvironmentMap
                     [x, y, z, valid] = envmapAngular2World(dims);
                     
                 case EnvironmentMapFormat.Cube
-                    [x, y, z, valid] = envmapCube2World(dims);
+                    % we need to divide the dimensions by 4 since they
+                    % assume we're talking about only one side of the cube
+                    % and not the cube "image" 
+                    [x, y, z, valid] = envmapCube2World(dims./4);
                     
                 case EnvironmentMapFormat.SkyAngular
                     [x, y, z, valid] = envmapSkyAngular2World(dims);
