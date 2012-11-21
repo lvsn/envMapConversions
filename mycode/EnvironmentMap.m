@@ -145,33 +145,16 @@ classdef EnvironmentMap
             % Get the world coordinates
             [dx, dy, dz, valid] = EnvironmentMap.worldCoordinatesStatic(tgtFormat, tgtDim);
             
-            % Get the environment map representation
-            switch (e.format)
-                case EnvironmentMapFormat.LatLong
-                    e.data = envmapWorld2LatLong(e.data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Angular
-                    e.data = envmapWorld2Angular(e.data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Cube
-                    e.data = envmapWorld2Cube(e.data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.SkyAngular
-                    e.data = envmapWorld2SkyAngular(e.data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Octahedral
-                    e.data = envmapWorld2Octahedral(e.data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Sphere
-                    e.data = envmapWorld2Sphere(e.data, dx, dy, dz);
-                    
-                otherwise
-                    error('Conversion from %s to %s unsupported!', ...
-                        e.format.char, tgtFormat.char);
-            end
+            % Put in image coordinates
+            e.data = e.imageCoordinates(dx, dy, dz, valid);
             
-            e.data(~valid(:,:,ones(1,e.nbands))) = 0;
+            % Change format
             e.format = tgtFormat;            
+        end
+        
+        function data = imageCoordinates(e, dx, dy, dz, valid)
+            data = EnvironmentMap.imageCoordinatesStatic(e.format, e.data, ...
+                dx, dy, dz, valid);
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
@@ -182,6 +165,36 @@ classdef EnvironmentMap
     end
     
     methods (Static)
+        
+        function envmapData = imageCoordinatesStatic(format, data, dx, dy, dz, valid)
+            % Get the environment map representation
+            switch (format)
+                case EnvironmentMapFormat.LatLong
+                    envmapData = envmapWorld2LatLong(data, dx, dy, dz);
+                    
+                case EnvironmentMapFormat.Angular
+                    envmapData = envmapWorld2Angular(data, dx, dy, dz);
+                    
+                case EnvironmentMapFormat.Cube
+                    envmapData = envmapWorld2Cube(data, dx, dy, dz);
+                    
+                case EnvironmentMapFormat.SkyAngular
+                    envmapData = envmapWorld2SkyAngular(data, dx, dy, dz);
+                    
+                case EnvironmentMapFormat.Octahedral
+                    envmapData = envmapWorld2Octahedral(data, dx, dy, dz);
+                    
+                case EnvironmentMapFormat.Sphere
+                    envmapData = envmapWorld2Sphere(data, dx, dy, dz);
+                    
+                otherwise
+                    error('EnvironmentMap:imageCoordinatesStatic', ...
+                        'Unsupported format: %s', format.char);
+            end
+            
+            nbands = size(envmapData, 3);
+            envmapData(~valid(:,:,ones(1,nbands))) = 0;
+        end
                 
         function [x, y, z, valid] = worldCoordinatesStatic(format, dims)
             % Returns the [x,y,z] world coordinates
@@ -212,7 +225,7 @@ classdef EnvironmentMap
                     [x, y, z, valid] = envmapSphere2World(dims);
 
                 otherwise
-                    error('IlluminationModel:getWorldCoordinates', ...
+                    error('EnvironmentMap:worldCoordinatesStatic', ...
                         'Unsupported format: %s', format.char);
             end
         end
