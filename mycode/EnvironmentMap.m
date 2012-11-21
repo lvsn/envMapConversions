@@ -121,6 +121,44 @@ classdef EnvironmentMap
                 e.data = rgb2gray(e.data);
             end
         end
+        
+        function e = rotate(e, conversionFormat, input, varargin)
+            % Rotates the environment map based on various types of input
+            % rotation formats
+            %
+            %   e = e.rotate(conversionFormat, input, <tolerance>, <checks>)
+            %
+            %   'conversionFormat' can be either:
+            %       - 'DCM'  : direct cosine matrix (input = 3x3 matrix)
+            %       - 'EA###': euler angles (input = [psi, theta, phi])
+            %       - 'EV'   : euler rotation vector & angle (input = [vec angle])
+            %       - 'Q'    : quaternion (input = [q1 q2 q3 q4])
+            % 
+            % See also:
+            %   SpinCalc.m
+            
+            % Get the world coordinates
+            [dx, dy, dz, valid] = e.worldCoordinates();
+            
+            % Get rotation matrix from input
+            conversion = sprintf('%stoDCM', conversionFormat);
+            R = SpinCalc(conversion, input, varargin{:});
+            
+            % Rotate the data
+            ptR = R*[row(dx); row(dy); row(dz)];
+            dx = reshape(ptR(1,:), size(dx));
+            dy = reshape(ptR(2,:), size(dy));
+            dz = reshape(ptR(3,:), size(dz));
+            
+            % make sure we're still in the [-1,1] interval (might
+            % _slightly_ overflow, thus causing problems later on)
+            dx = max(min(dx, 1), -1);
+            dy = max(min(dy, 1), -1);
+            dz = max(min(dz, 1), -1);
+            
+            % Create new environment map
+            e.data = e.imageCoordinates(dx, dy, dz, valid);
+        end
             
         
         function e = convertTo(e, tgtFormat, tgtDim)
