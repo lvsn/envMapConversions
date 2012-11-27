@@ -11,7 +11,7 @@ classdef EnvironmentMapFormat
     %   - Sphere
     
     enumeration
-        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere
+        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere, SkySphere
     end
     
     methods (Static)

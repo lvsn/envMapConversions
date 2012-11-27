@@ -225,6 +225,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.Sphere
                     envmapData = envmapWorld2Sphere(data, dx, dy, dz);
                     
+                case EnvironmentMapFormat.SkySphere
+                    envmapData = envmapWorld2SkySphere(data, dx, dy, dz);
+                    
                 otherwise
                     error('EnvironmentMap:imageCoordinatesStatic', ...
                         'Unsupported format: %s', format.char);
@@ -261,6 +264,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.Sphere
                     [x, y, z, valid] = envmapSphere2World(dims);
+                    
+                case EnvironmentMapFormat.SkySphere
+                    [x, y, z, valid] = envmapSkySphere2World(dims);
 
                 otherwise
                     error('EnvironmentMap:worldCoordinatesStatic', ...
