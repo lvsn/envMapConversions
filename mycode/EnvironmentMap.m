@@ -235,6 +235,9 @@ classdef EnvironmentMap
             
             nbands = size(envmapData, 3);
             envmapData(~valid(:,:,ones(1,nbands))) = 0;
+            
+            % check for NaN's (values outside of interpolation)
+            envmapData(isnan(envmapData)) = 0;
         end
                 
         function [x, y, z, valid] = worldCoordinatesStatic(format, dims)
