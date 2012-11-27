@@ -17,10 +17,10 @@ function [dx,dy,dz,valid] = envmapSphere2World(dim)
 % Jean-Francois Lalonde
 
 % Get the desired world coordinates from the output angular map
-[u,v] = meshgrid(linspace(0,1,dim), linspace(0,1,dim));
+[u,v] = meshgrid(linspace(-1,1,dim), linspace(-1,1,dim));
 
-r = sqrt((2.*u-1).^2 + (2.*v-1).^2);
-theta = atan2(2.*u-1, -2.*v+1);
+r = sqrt(u.^2 + v.^2);
+theta = atan2(u, -v);
 
 phi = zeros(size(theta));
 valid = r<=1;
