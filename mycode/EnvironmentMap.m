@@ -199,11 +199,105 @@ classdef EnvironmentMap
             % Returns the [x,y,z] world coordinates
             [x, y, z, valid] = EnvironmentMap.worldCoordinatesStatic(e.format, e.nrows);
         end
+        
+        function [u, v] = world2image(e, x, y, z)
+            % Returns the [u, v] image coordinates
+            switch (e.format)
+                case EnvironmentMapFormat.LatLong
+                    [u, v] = e.world2latlong(x, y, z);
+                    
+                case EnvironmentMapFormat.Angular
+                    [u, v] = e.world2angular(x, y, z);
+                    
+                case EnvironmentMapFormat.Cube
+                    [u, v] = e.world2cube(x, y, z);
+                    
+                case EnvironmentMapFormat.SkyAngular
+                    [u, v] = e.world2skyangular(x, y, z);
+                    
+                case EnvironmentMapFormat.Octahedral
+                    [u, v] = e.world2octahedral(x, y, z);
+                    
+                case EnvironmentMapFormat.Sphere
+                    [u, v] = e.world2sphere(x, y, z);
+                    
+                case EnvironmentMapFormat.SkySphere
+                    [u, v] = e.world2skysphere(x, y, z);
+                    
+                otherwise
+                    error('EnvironmentMap:world2image', ...
+                        'Unsupported format: %s', e.format.char);
+            end
+        end
 
     end
     
-    methods (Static)
+    methods (Access=private)
+        % In all of the following: x,y,z,u,v in [0,1]
+        function [u, v] = world2latlong(~, x, y, z)
+            % world -> lat-long
+            u = 1 + (1/pi) .* atan2(x, -z);
+            v = (1/pi) .* acos(y);
+            
+            u = u./2; % because we want [0,1] interval
+        end
         
+        function [u, v] = world2angular(~, x, y, z)
+            % world -> angular
+            rAngular = acos(-z) ./ (2.*pi.*sqrt(x.^2 + y.^2));
+            v = 1/2-rAngular.*y;
+            u = 1/2+rAngular.*x;
+        end
+        
+        function [u, v] = world2cube(~, x, y, z)
+            error('fixme');
+        end
+        
+        function [u, v] = world2octahedral(~, x, y, z)
+            error('fixme');
+        end
+        
+        function [u, v] = world2skyangular(~, x, y, z) 
+            % world -> skyangular
+            thetaAngular = atan2(x, z); % azimuth
+            phiAngular = atan2(sqrt(x.^2+z.^2), y); % zenith
+            
+            r = phiAngular./(pi/2);
+            
+            u = r.*sin(thetaAngular)./2+1/2;
+            v = 1/2-r.*cos(thetaAngular)./2;
+        end
+        
+        function [u, v] = world2skysphere(~, x, y, z)
+            % world -> skysphere
+            r = sin(.5.*acos(y)) ./ (sqrt(x.^2+z.^2)) * 2/sqrt(2);
+            
+            u = .5*r.*x+.5;
+            v = 1-(.5*r.*z+.5);
+        end
+        
+        function [u, v] = world2sphere(~, x, y, z)
+            % world -> sphere
+            r = sin(.5.*acos(-z)) ./ (2.*sqrt(x.^2+y.^2));
+            
+            u = .5+r.*x;
+            v = .5-r.*y;
+        end
+        
+        function [x, y, z, valid] = latlong2world(~, u, v)
+            % lat-long -> world
+            thetaLatLong = pi.*(u-1);
+            phiLatLong = pi.*v;
+            
+            x = sin(phiLatLong).*sin(thetaLatLong);
+            y = cos(phiLatLong);
+            z = -sin(phiLatLong).*cos(thetaLatLong);
+            
+            valid = true(size(x));
+        end
+    end
+    
+    methods (Static)
         function envmapData = imageCoordinatesStatic(format, data, dx, dy, dz, valid)
             % Get the environment map representation
             switch (format)
