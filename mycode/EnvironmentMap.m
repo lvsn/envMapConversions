@@ -184,7 +184,19 @@ classdef EnvironmentMap
             [dx, dy, dz, valid] = EnvironmentMap.worldCoordinatesStatic(tgtFormat, tgtDim);
             
             % Put in image coordinates
-            e.data = e.imageCoordinates(dx, dy, dz, valid);
+            [u, v] = e.world2image(dx, dy, dz);
+            
+            % Interpolate to get the desired pixel values
+            envMap = zeros(size(dx, 1), size(dx, 2), e.nbands);
+            for c=1:size(envMap,3)
+                envMap(:, :, c) = reshape(...
+                    interp2(linspace(0,1,e.ncols), linspace(0,1,e.nrows), ...
+                    e.data(:, :, c), ...
+                    u(:), v(:)), size(envMap,1), size(envMap,2));
+            end
+            valid = valid & any(~isnan(envMap), 3);
+            envMap(~valid(:,:,ones(1,e.nbands))) = 0;
+            e.data = envMap;
             
             % Change format
             e.format = tgtFormat;            
