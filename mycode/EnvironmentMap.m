@@ -213,6 +213,12 @@ classdef EnvironmentMap
         end
         
         function [u, v] = world2image(e, x, y, z)
+            if nargin == 2
+                y = x(2); 
+                z = x(3); 
+                x = x(1);
+            end
+            
             % Returns the [u, v] image coordinates
             switch (e.format)
                 case EnvironmentMapFormat.LatLong
