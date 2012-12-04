@@ -275,9 +275,7 @@ classdef EnvironmentMap
             % Create temporary environment map object, and ask it for its
             % image coordinates
             eTmp = EnvironmentMap(tgtDim, tgtFormat);
-            [u,v] = meshgrid(linspace(0, 1, eTmp.ncols), linspace(0, 1, eTmp.nrows));
-            
-            [dx, dy, dz, valid] = eTmp.image2world(u, v);
+            [dx, dy, dz, valid] = eTmp.worldCoordinates();
             
             % Put in image coordinates
             [u, v] = e.world2image(dx, dy, dz);
@@ -304,8 +302,10 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
-            % Returns the [x,y,z] world coordinates
-            [x, y, z, valid] = EnvironmentMap.worldCoordinatesStatic(e.format, e.nrows);
+            % Returns the [x,y,z] world coordinates for each pixel in the
+            % environment map
+            [u, v] = meshgrid(linspace(0, 1, e.ncols), linspace(0, 1, e.nrows));
+            [x, y, z, valid] = e.image2world(u, v);
         end
         
         function [u, v] = world2image(e, x, y, z)
@@ -576,65 +576,6 @@ classdef EnvironmentMap
             % stereographic -> world
         end
 
-    end
-    
-    methods (Static)
-        function [x, y, z, valid] = worldCoordinatesStatic(format, dims, focalLength)
-            % Returns the [x,y,z] world coordinates
-            
-            assert(isa(format, 'EnvironmentMapFormat'), ...
-                'Input format is expected to be of type ''EnvironmentMapFormat''.');
-
-            switch(format)
-                case EnvironmentMapFormat.LatLong
-                    [x, y, z, valid] = envmapLatLong2World(dims);
-                                        
-                case EnvironmentMapFormat.Angular
-                    [x, y, z, valid] = envmapAngular2World(dims);
-                    
-                case EnvironmentMapFormat.Cube
-                    % we need to divide the dimensions by 4 since they
-                    % assume we're talking about only one side of the cube
-                    % and not the cube "image" 
-                    [x, y, z, valid] = envmapCube2World(dims./4);
-                    
-                case EnvironmentMapFormat.SkyAngular
-                    [x, y, z, valid] = envmapSkyAngular2World(dims);
-                    
-                case EnvironmentMapFormat.Octahedral
-                    [x, y, z, valid] = envmapOctahedral2World(dims);
-                    
-                case EnvironmentMapFormat.Sphere
-                    [x, y, z, valid] = envmapSphere2World(dims);
-                    
-                case EnvironmentMapFormat.SkySphere
-                    [x, y, z, valid] = envmapSkySphere2World(dims);
-                    
-                case EnvironmentMapFormat.Stereographic
-                    % need the focal length
-                    assert(exist('focalLength', 'var')~=0, ...
-                        'EnvironmentMap:worldCoordinatesStatic', ...
-                        'Need focal length when format is "Stereographic".');
-                    
-                    % here, dims is assumed to be a 2-vector [nrows, ncols]
-                    assert(length(dims == 2), ...
-                        'EnvironmentMap:worldCoordinatesStatic', ...
-                        '''dims'' must be a 2-vector [nrows ncols]');
-                    
-                    % work in the [-1,1] interval
-                    f = focalLength/(ncols/2);
-                    [u,v] = meshgrid(linspace(-1,1,dims(2)), ...
-                        linspace(-1,1,dims(1)));
-                    
-                    theta = atan2(f, u);
-                    error('Fix me!');
-                    
-
-                otherwise
-                    error('EnvironmentMap:worldCoordinatesStatic', ...
-                        'Unsupported format: %s', format.char);
-            end
-        end
     end
 end
 
