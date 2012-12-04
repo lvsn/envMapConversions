@@ -157,7 +157,8 @@ classdef EnvironmentMap
             dz = max(min(dz, 1), -1);
             
             % Create new environment map
-            e.data = e.imageCoordinates(dx, dy, dz, valid);
+            [u, v] = e.world2image(dx, dy, dz);
+            e = e.interpolate(u, v, valid);
         end
             
         
@@ -185,9 +186,17 @@ classdef EnvironmentMap
             
             % Put in image coordinates
             [u, v] = e.world2image(dx, dy, dz);
+
+            % Interpolate
+            e = e.interpolate(u, v, valid);
             
+            % Change format
+            e.format = tgtFormat;            
+        end
+        
+        function e = interpolate(e, u, v, valid)
             % Interpolate to get the desired pixel values
-            envMap = zeros(size(dx, 1), size(dx, 2), e.nbands);
+            envMap = zeros(size(u, 1), size(u, 2), e.nbands);
             for c=1:size(envMap,3)
                 envMap(:, :, c) = reshape(...
                     interp2(linspace(0,1,e.ncols), linspace(0,1,e.nrows), ...
@@ -197,14 +206,6 @@ classdef EnvironmentMap
             valid = valid & any(~isnan(envMap), 3);
             envMap(~valid(:,:,ones(1,e.nbands))) = 0;
             e.data = envMap;
-            
-            % Change format
-            e.format = tgtFormat;            
-        end
-        
-        function data = imageCoordinates(e, dx, dy, dz, valid)
-            data = EnvironmentMap.imageCoordinatesStatic(e.format, e.data, ...
-                dx, dy, dz, valid);
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
@@ -316,43 +317,7 @@ classdef EnvironmentMap
     end
     
     methods (Static)
-        function envmapData = imageCoordinatesStatic(format, data, dx, dy, dz, valid)
-            % Get the environment map representation
-            switch (format)
-                case EnvironmentMapFormat.LatLong
-                    envmapData = envmapWorld2LatLong(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Angular
-                    envmapData = envmapWorld2Angular(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Cube
-                    envmapData = envmapWorld2Cube(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.SkyAngular
-                    envmapData = envmapWorld2SkyAngular(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Octahedral
-                    envmapData = envmapWorld2Octahedral(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.Sphere
-                    envmapData = envmapWorld2Sphere(data, dx, dy, dz);
-                    
-                case EnvironmentMapFormat.SkySphere
-                    envmapData = envmapWorld2SkySphere(data, dx, dy, dz);
-                    
-                otherwise
-                    error('EnvironmentMap:imageCoordinatesStatic', ...
-                        'Unsupported format: %s', format.char);
-            end
-            
-            nbands = size(envmapData, 3);
-            envmapData(~valid(:,:,ones(1,nbands))) = 0;
-            
-            % check for NaN's (values outside of interpolation)
-            envmapData(isnan(envmapData)) = 0;
-        end
-                
-        function [x, y, z, valid] = worldCoordinatesStatic(format, dims)
+        function [x, y, z, valid] = worldCoordinatesStatic(format, dims, focalLength)
             % Returns the [x,y,z] world coordinates
             
             assert(isa(format, 'EnvironmentMapFormat'), ...
