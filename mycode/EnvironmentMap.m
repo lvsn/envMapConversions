@@ -188,8 +188,10 @@ classdef EnvironmentMap
             if e.format == EnvironmentMapFormat.Stereographic
                 % must adapt the focal length when resizing!
                 ratio = [e.nrows e.ncols]./origSize;
-                assert(ratio(1) == ratio(2), ...
-                    'Resizing a stereographic image must preserve the aspect ratio!');
+                if ratio(1) ~= ratio(2)
+                warning('EnvironmentMap:resize', ...
+                    'Aspect ratio changed by %.2f%%', abs(ratio(2)-ratio(1))/ratio(1)*100);
+                end
                 e.focalLength = e.focalLength * ratio(1);
             end
         end
@@ -403,7 +405,9 @@ classdef EnvironmentMap
     end
     
     methods (Access=private)
+        % Below are all the conversion functions. 
         % In all of the following: x,y,z,u,v in [0,1]
+        
         function [u, v] = world2latlong(~, x, y, z)
             % world -> lat-long
             u = 1 + (1/pi) .* atan2(x, -z);
@@ -572,8 +576,32 @@ classdef EnvironmentMap
             valid = r <= .25; % .5^2
         end
         
-        function [x, y, z, valid] = stereographic2world(~, u, v)
+        function [x, y, z, valid] = stereographic2world(e, u, v)
             % stereographic -> world
+            assert(~isempty(e.hFov));
+            assert(~isempty(e.vFov));
+            assert(~isempty(e.focalLength));
+            
+            % put back in the [-1,1] interval
+            u = u*2-1;
+            v = v*2-1;
+            
+            % scale by image coordinates
+            u = u*(2*e.focalLength*tan(e.hFov/2));
+            v = v*(2*e.focalLength*tan(e.vFov/2));
+            
+            r = sqrt(u.^2+v.^2);
+            
+            % recover spherical angles
+            theta = 2*atan2(r, 2*e.focalLength) - pi/2;
+            phi = -atan2(v, u);
+            
+            % convert back to x, y, z from spherical angles.
+            x = cos(theta).*cos(phi);
+            y = cos(theta).*sin(phi);
+            z = sin(theta);
+            
+            valid = true(size(u)); % all valid
         end
 
     end
