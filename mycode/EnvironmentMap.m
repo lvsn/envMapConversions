@@ -255,11 +255,16 @@ classdef EnvironmentMap
         end
             
         
-        function e = convertTo(e, tgtFormat, tgtDim)
+        function e = convertTo(e, tgtFormat, tgtDim, varargin)
             % Converts the environment map to the specified format
             %
-            %   e = convertTo(e, tgtFormat, <tgtDim>)
+            %   e = convertTo(e, tgtFormat, <tgtDim>, ...)
             %
+            %   e = convertTo(e, ..., <par1, val1>, ...)
+            %
+            % Useful to convert to the Stereographic format, which requires
+            % the specification of the field of view (either horizontal,
+            % vertical, or diagonal)
             
             tgtFormat = EnvironmentMapFormat.format(tgtFormat);
             
@@ -276,7 +281,7 @@ classdef EnvironmentMap
             
             % Create temporary environment map object, and ask it for its
             % image coordinates
-            eTmp = EnvironmentMap(tgtDim, tgtFormat);
+            eTmp = EnvironmentMap(tgtDim, tgtFormat, varargin{:});
             [dx, dy, dz, valid] = eTmp.worldCoordinates();
             
             % Put in image coordinates
