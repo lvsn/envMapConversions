@@ -19,6 +19,9 @@ classdef EnvironmentMap
     properties (GetAccess = public, SetAccess = private)
         data = [];
         format = 0;
+        focalLength = [];
+        hFov = [];
+        vFov = [];
     end
     
     properties (Dependent, SetAccess = private)
@@ -29,7 +32,7 @@ classdef EnvironmentMap
     end
     
     methods
-        function e = EnvironmentMap(varargin)
+        function e = EnvironmentMap(input, format, varargin)
             % creates an EnvironmentMap object
             %
             %   e = EnvironmentMap(envmap, format)
@@ -41,11 +44,25 @@ classdef EnvironmentMap
             % 
             % Creates an environment map from an image _file_, and its
             % associated format.
+            %
+            %   e = EnvironmentMap(..., <par1, val1>, ...)
+            %
+            % Creates environment map with additional name/value pairs:
+            % 
+            %   - 'hfov': horizontal field of view (degrees)
+            %   - 'vfov': vertical field of view (degrees)
+            %   - 'dfov': diagonal field of view (degrees)
             
-            assert(length(varargin)==2, 'Must have two inputs');
-            if ischar(varargin{1})
+            
+            hfov = [];
+            vfov = [];
+            dfov = [];
+            
+            parseVarargin(varargin{:});
+                        
+            if ischar(input)
                 % we're given the filename
-                filename = varargin{1};
+                filename = input;
                 [~,~,ext] = fileparts(filename);
                 
                 switch (ext)
@@ -66,15 +83,59 @@ classdef EnvironmentMap
                 
             else
                 % we're given the image directly
-                assert(isnumeric(varargin{1}), ...
+                assert(isnumeric(input), ...
                     'First input must be an image');
-                assert(ndims(varargin{1}) <= 3, ...
+                assert(ndims(input) <= 3, ...
                     'Can''t handle multi-dimensional environment maps');
                 
-                e.data = im2double(varargin{1});
+                e.data = im2double(input);
             end
             
-            e.format = EnvironmentMapFormat.format(varargin{2});
+            e.format = EnvironmentMapFormat.format(format);
+            
+            if e.format == EnvironmentMapFormat.Stereographic
+                assert(~isempty(hfov) | ~isempty(vfov) | ~isempty(dfov), ...
+                    'Stereographic format requires field of view.');
+                % re-warp the environment map such that the horizontal fov
+                % maps the input (adjust the vertical fov accordingly assuming square pixels)
+                
+                if ~isempty(hfov)
+%                     e.hFov = hfov*pi/180;
+%                     e.vFov = e.hFov*size(e.data,1)/size(e.data,2);
+                    hfov = hfov*pi/180;
+                    theta = hfov/2;
+                    r = size(e.data,2)/2;
+                    
+                elseif ~isempty(vfov)
+                    vfov = vfov*pi/180;
+                    theta = vfov/2;
+                    r = size(e.data,1)/2;
+                    
+                elseif ~isempty(dfov)
+                    r = sqrt(size(e.data,1)^2+size(e.data,2)^2)/2;
+                    dfov = dfov*pi/180;
+                    theta = dfov/2;
+                    
+                end
+                e.focalLength = r/(2*tan(theta/2));
+                
+                % compute the vertical/horizontal fovs
+                e.hFov = 2*atan2(size(e.data,2)/2, 2*e.focalLength);
+                e.vFov = 2*atan2(size(e.data,1)/2, 2*e.focalLength);
+                
+            else
+                assert(isempty(hfov), ...
+                    'Use the "Stereographic" format when specifying a field of view');
+            end
+            
+            % check for input validity
+            if e.format == EnvironmentMapFormat.Sphere || ...
+                e.format == EnvironmentMapFormat.Angular || ...
+                e.format == EnvironmentMapFormat.SkySphere || ...
+                e.format == EnvironmentMapFormat.SkyAngular
+                assert(size(e.data,1) == size(e.data,2), ...
+                    'When the format is sphere/angular, both dimensions must be equal.');
+            end
         end
         
         % getters for the dependent properties
@@ -100,7 +161,16 @@ classdef EnvironmentMap
         end
         
         function e = imresize(e, varargin)
+            origSize = [e.nrows, e.ncols];
             e.data = imresize(e.data, varargin{:});
+            
+            if e.format == EnvironmentMapFormat.Stereographic
+                % must adapt the focal length when resizing!
+                ratio = [e.nrows e.ncols]./origSize;
+                assert(ratio(1) == ratio(2), ...
+                    'Resizing a stereographic image must preserve the aspect ratio!');
+                e.focalLength = e.focalLength * ratio(1);
+            end
         end
         
         function e = imfilter(e, varargin)
@@ -214,11 +284,22 @@ classdef EnvironmentMap
         end
         
         function [u, v] = world2image(e, x, y, z)
+            % Returns the [u,v] coordinates (in the [0,1] interval)
+            %
+            %   [u, v] = world2image(e, x, y, z);
+            %
+            %   [u, v] = world2image(e, pt);
+                
             if nargin == 2
+                % shortcut for a single point
+                assert(length(x) == 3);
                 y = x(2); 
                 z = x(3); 
                 x = x(1);
             end
+            
+            assert(all(size(x) == size(y)) && all(size(x) == size(z)), ...
+                'All of x, y, and z must have the same size');
             
             % Returns the [u, v] image coordinates
             switch (e.format)
@@ -242,6 +323,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.SkySphere
                     [u, v] = e.world2skysphere(x, y, z);
+                    
+                case EnvironmentMapFormat.Stereographic
+                    [u, v] = e.world2stereographic(x, y, z);
                     
                 otherwise
                     error('EnvironmentMap:world2image', ...
@@ -269,10 +353,12 @@ classdef EnvironmentMap
         end
         
         function [u, v] = world2cube(~, x, y, z)
+            % world -> cube
             error('fixme');
         end
         
         function [u, v] = world2octahedral(~, x, y, z)
+            % world -> octahedral
             error('fixme');
         end
         
@@ -301,6 +387,34 @@ classdef EnvironmentMap
             
             u = .5+r.*x;
             v = .5-r.*y;
+        end
+        
+        function [u, v] = world2stereographic(e, x, y, z)
+            % world -> stereographic
+            assert(~isempty(e.hFov));
+            assert(~isempty(e.vFov));
+            assert(~isempty(e.focalLength));
+            
+            % r = 2*f*tan(theta/2)
+            theta = pi/2-atan2(-z,sqrt(x.^2 + y.^2));
+            phi = atan2(y, x);
+            r = 2.*e.focalLength.*tan(theta/2);
+            
+            % (u,v) are in pixels
+            u = r.*cos(phi);
+            v = -r.*sin(phi);
+            
+            % normalize in the [-1,1] interval
+            u = u./(2*e.focalLength*tan(e.hFov/2));
+            v = v./(2*e.focalLength*tan(e.vFov/2));
+            
+            % u and v are now in the [-1,1] interval. 
+            u = (u+1)/2;
+            v = (v+1)/2;
+            
+            % camera is pointing in the negative z direction
+            u(z > 0) = -1;
+            v(z > 0) = -1;
         end
         
         function [x, y, z, valid] = latlong2world(~, u, v)
@@ -347,6 +461,26 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.SkySphere
                     [x, y, z, valid] = envmapSkySphere2World(dims);
+                    
+                case EnvironmentMapFormat.Stereographic
+                    % need the focal length
+                    assert(exist('focalLength', 'var')~=0, ...
+                        'EnvironmentMap:worldCoordinatesStatic', ...
+                        'Need focal length when format is "Stereographic".');
+                    
+                    % here, dims is assumed to be a 2-vector [nrows, ncols]
+                    assert(length(dims == 2), ...
+                        'EnvironmentMap:worldCoordinatesStatic', ...
+                        '''dims'' must be a 2-vector [nrows ncols]');
+                    
+                    % work in the [-1,1] interval
+                    f = focalLength/(ncols/2);
+                    [u,v] = meshgrid(linspace(-1,1,dims(2)), ...
+                        linspace(-1,1,dims(1)));
+                    
+                    theta = atan2(f, u);
+                    error('Fix me!');
+                    
 
                 otherwise
                     error('EnvironmentMap:worldCoordinatesStatic', ...

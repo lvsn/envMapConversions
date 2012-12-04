@@ -9,9 +9,12 @@ classdef EnvironmentMapFormat
     %   - Cube
     %   - Octahedral
     %   - Sphere
+    %   - SkySphere
+    %   - Stereographic (fisheye, r = 2r tan(theta/2))
     
     enumeration
-        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere, SkySphere
+        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere, SkySphere, ...
+            Stereographic
     end
     
     methods (Static)
