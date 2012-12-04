@@ -45,6 +45,12 @@ classdef EnvironmentMap
             % Creates an environment map from an image _file_, and its
             % associated format.
             %
+            %   e = EnvironmentMap(dims, format)
+            %
+            % Creates an all-zeros environment map with vertical
+            % dimensions 'dims' (horizontal dimensions automatically
+            % determined based on format).
+            %
             %   e = EnvironmentMap(..., <par1, val1>, ...)
             %
             % Creates environment map with additional name/value pairs:
@@ -79,6 +85,21 @@ classdef EnvironmentMap
                         % we'll just rely on imread
                         e.data = im2double(imread(filename));
                         
+                end
+                
+            elseif isscalar(input)
+                % we're given the vertical dimension only --> create
+                % all-zeros
+                switch EnvironmentMapFormat.format(format)
+                    case EnvironmentMapFormat.LatLong
+                        e.data = zeros(input, input*2);
+                        
+                    case EnvironmentMapFormat.Cube
+                        e.data = zeros(4*dims, 3*dims);
+                        
+                    otherwise
+                        % square data
+                        e.data = zeros(input, input);
                 end
                 
             else
@@ -251,8 +272,12 @@ classdef EnvironmentMap
                 return;
             end
             
-            % Get the world coordinates
-            [dx, dy, dz, valid] = EnvironmentMap.worldCoordinatesStatic(tgtFormat, tgtDim);
+            % Create temporary environment map object, and ask it for its
+            % image coordinates
+            eTmp = EnvironmentMap(tgtDim, tgtFormat);
+            [u,v] = meshgrid(linspace(0, 1, eTmp.ncols), linspace(0, 1, eTmp.nrows));
+            
+            [dx, dy, dz, valid] = eTmp.image2world(u, v);
             
             % Put in image coordinates
             [u, v] = e.world2image(dx, dy, dz);
@@ -332,6 +357,48 @@ classdef EnvironmentMap
                         'Unsupported format: %s', e.format.char);
             end
         end
+        
+        function [x, y, z, valid] = image2world(e, u, v)
+            % Returns the [u,v] coordinates (in the [0,1] interval)
+            %
+            %   [u, v] = world2image(e, x, y, z);
+            %
+            %   [u, v] = world2image(e, pt);
+            
+            assert(all(size(u) == size(v)), ...
+                'u and v must have the same size');
+            
+            % Returns the [x, y, z] world coordinates
+            switch (e.format)
+                case EnvironmentMapFormat.LatLong
+                    [x, y, z, valid] = e.latlong2world(u, v);
+                    
+                case EnvironmentMapFormat.Angular
+                    [x, y, z, valid] = e.angular2world(u, v);
+                    
+                case EnvironmentMapFormat.Cube
+                    [x, y, z, valid] = e.cube2world(u, v);
+                    
+                case EnvironmentMapFormat.SkyAngular
+                    [x, y, z, valid] = e.skyangular2world(u, v);
+                    
+                case EnvironmentMapFormat.Octahedral
+                    [x, y, z, valid] = e.octahedral2world(u, v);
+                    
+                case EnvironmentMapFormat.Sphere
+                    [x, y, z, valid] = e.sphere2world(u, v);
+                    
+                case EnvironmentMapFormat.SkySphere
+                    [x, y, z, valid] = e.skysphere2world(u, v);
+                    
+                case EnvironmentMapFormat.Stereographic
+                    [x, y, z, valid] = e.stereographic2world(u, v);
+                    
+                otherwise
+                    error('EnvironmentMap:world2image', ...
+                        'Unsupported format: %s', e.format.char);
+            end
+        end
 
     end
     
@@ -354,12 +421,12 @@ classdef EnvironmentMap
         
         function [u, v] = world2cube(~, x, y, z)
             % world -> cube
-            error('fixme');
+            error('world2cube: fixme');
         end
         
         function [u, v] = world2octahedral(~, x, y, z)
             % world -> octahedral
-            error('fixme');
+            error('world2octahedral: fixme');
         end
         
         function [u, v] = world2skyangular(~, x, y, z) 
@@ -418,6 +485,8 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = latlong2world(~, u, v)
+            u = u*2;
+            
             % lat-long -> world
             thetaLatLong = pi.*(u-1);
             phiLatLong = pi.*v;
@@ -428,6 +497,85 @@ classdef EnvironmentMap
             
             valid = true(size(x));
         end
+        
+        function [x, y, z, valid] = angular2world(~, u, v)
+            % angular -> world
+            thetaAngular = atan2(-2.*v+1, 2.*u-1);
+            phiAngular = pi.*sqrt((2.*u-1).^2 + (2.*v-1).^2);
+            
+            x = sin(phiAngular).*cos(thetaAngular);
+            y = sin(phiAngular).*sin(thetaAngular);
+            z = -cos(phiAngular);
+            
+            r = (u-0.5).^2 + (v-0.5).^2;
+            valid = r <= .25; % .5^2
+        end
+        
+        function [x, y, z, valid] = cube2world(~, u, v)
+            error('cube2world: fixme!');
+        end
+        
+        function [x, y, z, valid] = octahedral2world(~, u, v)
+            error('octahedral2world: fixme!');
+        end
+        
+        function [x, y, z, valid] = sphere2world(~, u, v)
+            u = u*2-1;
+            v = v*2-1;
+            
+            % sphere -> world
+            r = sqrt(u.^2 + v.^2);
+            theta = atan2(u, -v);
+            
+            phi = zeros(size(theta));
+            valid = r<=1;
+            phi(valid) = 2.*asin(r(valid));
+            
+            x = sin(phi).*sin(theta);
+            y = sin(phi).*cos(theta);
+            z = -cos(phi);
+        end
+
+        function [x, y, z, valid] = skysphere2world(~, u, v)
+            % skysphere -> world
+            u = u*2-1;
+            v = v*2-1;
+            
+            valid = u.^2 + v.^2 <= 1;
+            
+            uM = u*sqrt(2)/2;
+            vM = v*sqrt(2)/2;
+            
+            r = sqrt(uM.^2 + vM.^2);
+            
+            phi = zeros(size(valid));
+            theta = zeros(size(valid));
+            
+            theta(valid) = atan2(uM(valid), -vM(valid));
+            phi(valid) = 2.*asin(r(valid));
+            
+            x = sin(phi).*sin(theta);
+            y = cos(phi);
+            z = sin(phi).*cos(theta);
+        end
+        
+        function [x, y, z, valid] = skyangular2world(~, u, v)
+            % skyangular -> world
+            thetaAngular = atan2(-2.*v+1, 2.*u-1); % azimuth
+            phiAngular = pi/2.*sqrt((2.*u-1).^2 + (2.*v-1).^2); % zenith
+            
+            x = sin(phiAngular).*cos(thetaAngular);
+            z = sin(phiAngular).*sin(thetaAngular);
+            y = cos(phiAngular);
+            
+            r = (u-0.5).^2 + (v-0.5).^2;
+            valid = r <= .25; % .5^2
+        end
+        
+        function [x, y, z, valid] = stereographic2world(~, u, v)
+            % stereographic -> world
+        end
+
     end
     
     methods (Static)
