@@ -22,6 +22,9 @@ classdef EnvironmentMap
         focalLength = [];
         hFov = [];
         vFov = [];
+        
+        fisheyeMappingFcn = [];
+        fisheyeInverseFcn = [];
     end
     
     properties (Dependent, SetAccess = private)
@@ -63,6 +66,8 @@ classdef EnvironmentMap
             hfov = [];
             vfov = [];
             dfov = [];
+            
+            focal = [];
             
             parseVarargin(varargin{:});
                         
@@ -114,37 +119,59 @@ classdef EnvironmentMap
             
             e.format = EnvironmentMapFormat.format(format);
             
-            if e.format == EnvironmentMapFormat.Stereographic
-                assert(~isempty(hfov) | ~isempty(vfov) | ~isempty(dfov), ...
-                    'Stereographic format requires field of view.');
-                % re-warp the environment map such that the horizontal fov
-                % maps the input (adjust the vertical fov accordingly assuming square pixels)
-                
-                if ~isempty(hfov)
-%                     e.hFov = hfov*pi/180;
-%                     e.vFov = e.hFov*size(e.data,1)/size(e.data,2);
-                    hfov = hfov*pi/180;
-                    theta = hfov/2;
-                    r = size(e.data,2)/2;
+            switch e.format 
+                case EnvironmentMapFormat.Stereographic
+                    assert(~isempty(hfov) | ~isempty(vfov) | ~isempty(dfov), ...
+                        'Stereographic format requires field of view.');
+                    % re-warp the environment map such that the horizontal fov
+                    % maps the input (adjust the vertical fov accordingly assuming square pixels)
                     
-                elseif ~isempty(vfov)
-                    vfov = vfov*pi/180;
-                    theta = vfov/2;
-                    r = size(e.data,1)/2;
+                    if ~isempty(hfov)
+                        %                     e.hFov = hfov*pi/180;
+                        %                     e.vFov = e.hFov*size(e.data,1)/size(e.data,2);
+                        hfov = hfov*pi/180;
+                        theta = hfov/2;
+                        r = size(e.data,2)/2;
+                        
+                    elseif ~isempty(vfov)
+                        vfov = vfov*pi/180;
+                        theta = vfov/2;
+                        r = size(e.data,1)/2;
+                        
+                    elseif ~isempty(dfov)
+                        r = sqrt(size(e.data,1)^2+size(e.data,2)^2)/2;
+                        dfov = dfov*pi/180;
+                        theta = dfov/2;
+                        
+                    end
+                    e.focalLength = r/(2*tan(theta/2));
                     
-                elseif ~isempty(dfov)
-                    r = sqrt(size(e.data,1)^2+size(e.data,2)^2)/2;
-                    dfov = dfov*pi/180;
-                    theta = dfov/2;
+                    % compute the vertical/horizontal fovs
+                    e.hFov = 2*atan2(size(e.data,2)/2, 2*e.focalLength);
+                    e.vFov = 2*atan2(size(e.data,1)/2, 2*e.focalLength);
                     
-                end
-                e.focalLength = r/(2*tan(theta/2));
-                
-                % compute the vertical/horizontal fovs
-                e.hFov = 2*atan2(size(e.data,2)/2, 2*e.focalLength);
-                e.vFov = 2*atan2(size(e.data,1)/2, 2*e.focalLength);
-                
-            else
+                    % the mapping function is r = 2*f*tan(theta/2)
+                    e.fisheyeMappingFcn = @(theta) 2.*e.focalLength.*tan(theta/2);
+                    % the inverse function is theta = 2*atan(r/2f);
+                    e.fisheyeInverseFcn = @(r) 2*atan2(r, 2*e.focalLength);
+                    
+                case EnvironmentMapFormat.Fisheye
+                    assert(~isempty(focal), ...
+                        'Fisheye format requires focal length');
+                    
+                    e.focalLength = focal;
+                    
+                    % compute the vertical/horizontal fovs
+                    e.hFov = (size(e.data,2)/2)/e.focalLength;
+                    e.vFov = (size(e.data,1)/2)/e.focalLength;
+                    
+                    % the mapping function is r = f * theta;
+                    e.fisheyeMappingFcn = @(theta) e.focalLength.*theta;
+                    % the inverse function is theta = r/f;
+                    e.fisheyeInverseFcn = @(r) r./e.focalLength;
+                    
+                    
+                otherwise
                 assert(isempty(hfov), ...
                     'Use the "Stereographic" format when specifying a field of view');
             end
@@ -174,7 +201,13 @@ classdef EnvironmentMap
         
         % additional overloads
         function imshow(e)
-            imshow(e.data);
+            % we'll use the 'hdr' version if available
+            if exist('imshowHDR', 'file')
+                imshowFcn = @imshowHDR;
+            else
+                imshowFcn = @imshow;
+            end
+            imshowFcn(e.data);
         end
         
         function varargout = size(e, varargin)
@@ -185,7 +218,9 @@ classdef EnvironmentMap
             origSize = [e.nrows, e.ncols];
             e.data = imresize(e.data, varargin{:});
             
-            if e.format == EnvironmentMapFormat.Stereographic
+            if e.format == EnvironmentMapFormat.Stereographic || ...
+                    e.format == EnvironmentMapFormat.Fisheye
+                
                 % must adapt the focal length when resizing!
                 ratio = [e.nrows e.ncols]./origSize;
                 if ratio(1) ~= ratio(2)
@@ -211,11 +246,14 @@ classdef EnvironmentMap
                 warning('EnvironmentMap:intensity', ...
                     'Environment map already is intensity-only');
             else
-                e.data = rgb2gray(e.data);
+                % rgb2gray does't work for HDR data. 
+                e.data = 0.299 * e.data(:,:,1) + ...
+                    0.587 * e.data(:,:,2) + ...
+                    0.114 * e.data(:,:,3);
             end
         end
         
-        function e = rotate(e, conversionFormat, input, varargin)
+        function [e, R] = rotate(e, conversionFormat, input, varargin)
             % Rotates the environment map based on various types of input
             % rotation formats
             %
@@ -234,8 +272,12 @@ classdef EnvironmentMap
             [dx, dy, dz, valid] = e.worldCoordinates();
             
             % Get rotation matrix from input
-            conversion = sprintf('%stoDCM', conversionFormat);
-            R = SpinCalc(conversion, input, varargin{:});
+            if ~strcmp(conversionFormat, 'DCM')
+                conversion = sprintf('%stoDCM', conversionFormat);
+                R = SpinCalc(conversion, input, varargin{:});
+            else
+                R = input;
+            end
             
             % Rotate the data
             ptR = R*[row(dx); row(dy); row(dz)];
@@ -356,8 +398,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.SkySphere
                     [u, v] = e.world2skysphere(x, y, z);
                     
-                case EnvironmentMapFormat.Stereographic
-                    [u, v] = e.world2stereographic(x, y, z);
+                case {EnvironmentMapFormat.Fisheye, ...
+                        EnvironmentMapFormat.Stereographic}
+                    [u, v] = e.world2fisheye(x, y, z);
                     
                 otherwise
                     error('EnvironmentMap:world2image', ...
@@ -366,11 +409,10 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = image2world(e, u, v)
-            % Returns the [u,v] coordinates (in the [0,1] interval)
+            % Returns the [x,y,z] coordinates in the [-1,1] interval
             %
-            %   [u, v] = world2image(e, x, y, z);
+            %   [x, y, z, valid] = world2image(e, u, v);
             %
-            %   [u, v] = world2image(e, pt);
             
             assert(all(size(u) == size(v)), ...
                 'u and v must have the same size');
@@ -465,24 +507,27 @@ classdef EnvironmentMap
             v = .5-r.*y;
         end
         
-        function [u, v] = world2stereographic(e, x, y, z)
+        function [u, v] = world2fisheye(e, x, y, z)
             % world -> stereographic
             assert(~isempty(e.hFov));
             assert(~isempty(e.vFov));
             assert(~isempty(e.focalLength));
             
-            % r = 2*f*tan(theta/2)
+
             theta = pi/2-atan2(-z,sqrt(x.^2 + y.^2));
             phi = atan2(y, x);
-            r = 2.*e.focalLength.*tan(theta/2);
+            r = e.fisheyeMappingFcn(theta);
+%             r = 2.*e.focalLength.*tan(theta/2);
             
             % (u,v) are in pixels
             u = r.*cos(phi);
             v = -r.*sin(phi);
             
             % normalize in the [-1,1] interval
-            u = u./(2*e.focalLength*tan(e.hFov/2));
-            v = v./(2*e.focalLength*tan(e.vFov/2));
+            u = u./e.fisheyeMappingFcn(e.hFov);
+            v = v./e.fisheyeMappingFcn(e.vFov);
+%             u = u./(2*e.focalLength*tan(e.hFov/2));
+%             v = v./(2*e.focalLength*tan(e.vFov/2));
             
             % u and v are now in the [-1,1] interval. 
             u = (u+1)/2;
@@ -592,13 +637,16 @@ classdef EnvironmentMap
             v = v*2-1;
             
             % scale by image coordinates
-            u = u*(2*e.focalLength*tan(e.hFov/2));
-            v = v*(2*e.focalLength*tan(e.vFov/2));
+            u = u*e.fisheyeMappingFcn(e.hFov);
+            v = v*e.fisheyeMappingFcn(e.vFov);
+%             u = u*(2*e.focalLength*tan(e.hFov/2));
+%             v = v*(2*e.focalLength*tan(e.vFov/2));
             
             r = sqrt(u.^2+v.^2);
             
             % recover spherical angles
-            theta = 2*atan2(r, 2*e.focalLength) - pi/2;
+            theta = e.fisheyeInverseFcn(r) - pi/2;
+%             theta = 2*atan2(r, 2*e.focalLength) - pi/2;
             phi = -atan2(v, u);
             
             % convert back to x, y, z from spherical angles.
