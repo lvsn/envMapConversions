@@ -444,8 +444,11 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.SkySphere
                     [x, y, z, valid] = e.skysphere2world(u, v);
                     
+                case EnvironmentMapFormat.Fisheye
+                    [x, y, z, valid] = e.fisheye2world(u, v);
+                    
                 case EnvironmentMapFormat.Stereographic
-                    [x, y, z, valid] = e.stereographic2world(u, v);
+                    [x, y, z, valid] = e.fisheye2world(u, v);
                     
                 otherwise
                     error('EnvironmentMap:world2image', ...
@@ -630,8 +633,8 @@ classdef EnvironmentMap
             valid = r <= .25; % .5^2
         end
         
-        function [x, y, z, valid] = stereographic2world(e, u, v)
-            % stereographic -> world
+        function [x, y, z, valid] = fisheye2world(e, u, v)
+            % fisheye -> world
             assert(~isempty(e.hFov));
             assert(~isempty(e.vFov));
             assert(~isempty(e.focalLength));
