@@ -235,6 +235,10 @@ classdef EnvironmentMap
             e.data = imfilter(e.data, varargin{:});
         end
         
+        function imwrite(e, varargin)
+            hdr_imwrite(e.data, varargin{:});
+        end
+        
         function display(e)
             fprintf('EnvironmentMap, [%dx%dx%d], %s\n', ...
                 e.nrows, e.ncols, e.nbands, e.format.char);
