@@ -200,14 +200,18 @@ classdef EnvironmentMap
         end
         
         % additional overloads
-        function imshow(e)
+        function varargout = imshow(e, varargin)
             % we'll use the 'hdr' version if available
             if exist('imshowHDR', 'file')
                 imshowFcn = @imshowHDR;
             else
                 imshowFcn = @imshow;
             end
-            imshowFcn(e.data);
+            if nargout > 0
+                varargout{:} = imshowFcn(e.data, varargin{:});
+            else
+                imshowFcn(e.data, varargin{:});
+            end
         end
         
         function varargout = size(e, varargin)
