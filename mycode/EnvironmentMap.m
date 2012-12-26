@@ -420,6 +420,12 @@ classdef EnvironmentMap
             % Returns the [x,y,z] coordinates in the [-1,1] interval
             %
             %   [x, y, z, valid] = world2image(e, u, v);
+            % 
+            % Returns the x, y, z coordinates independently
+            %
+            %   [pos, valid] = world2image(e, u, v);
+            %
+            % Returns the 3-D points (3xN) directly.
             %
             
             assert(all(size(u) == size(v)), ...
@@ -461,8 +467,12 @@ classdef EnvironmentMap
                     [x, y, z, valid] = e.fisheye2world(u, v);
                     
                 otherwise
-                    error('EnvironmentMap:world2image', ...
+                    error('EnvironmentMap:image2world', ...
                         'Unsupported format: %s', e.format.char);
+            end
+            
+            if nargout == 1 || nargout == 2
+                x = [row(x); row(y); row(z)];
             end
         end
 
