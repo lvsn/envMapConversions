@@ -425,6 +425,12 @@ classdef EnvironmentMap
             assert(all(size(u) == size(v)), ...
                 'u and v must have the same size');
             
+            assert(min(u(:)) >= 0 && max(u(:)) <= 1, ...
+                'u must be in the [0,1] interval');
+            
+            assert(min(v(:)) >= 0 && max(v(:)) <= 1, ...
+                'v must be in the [0,1] interval');
+            
             % Returns the [x, y, z] world coordinates
             switch (e.format)
                 case EnvironmentMapFormat.LatLong
