@@ -243,6 +243,11 @@ classdef EnvironmentMap
             hdr_imwrite(e.data, varargin{:});
         end
         
+        function m = mean(e)
+            [~,~,~,valid] = e.worldCoordinates();
+            m = mean(reshape(e.data(valid(:,:,ones(1, e.nbands))), [], e.nbands), 1);
+        end
+        
         function display(e)
             fprintf('EnvironmentMap, [%dx%dx%d], %s\n', ...
                 e.nrows, e.ncols, e.nbands, e.format.char);
