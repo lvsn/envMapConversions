@@ -361,6 +361,9 @@ classdef EnvironmentMap
         function [x, y, z, valid] = worldCoordinates(e)
             % Returns the [x,y,z] world coordinates for each pixel in the
             % environment map
+            %
+            %   [x, y, z, valid] = e.worldCoordinates()
+            %
             [u, v] = meshgrid(linspace(0, 1, e.ncols), linspace(0, 1, e.nrows));
             [x, y, z, valid] = e.image2world(u, v);
         end
