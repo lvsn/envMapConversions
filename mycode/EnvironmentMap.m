@@ -296,12 +296,7 @@ classdef EnvironmentMap
             [dx, dy, dz, valid] = e.worldCoordinates();
             
             % Get rotation matrix from input
-            if ~strcmp(conversionFormat, 'DCM')
-                conversion = sprintf('%stoDCM', conversionFormat);
-                R = SpinCalc(conversion, input, varargin{:});
-            else
-                R = input;
-            end
+            R = rotationMatrixFromSpinCalcInput(format, input, varargin{:});
             
             % Rotate the data
             ptR = R*[row(dx); row(dy); row(dz)];
