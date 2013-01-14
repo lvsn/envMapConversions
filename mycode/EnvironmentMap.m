@@ -277,20 +277,21 @@ classdef EnvironmentMap
             end
         end
         
-        function [e, R] = rotate(e, conversionFormat, input, varargin)
+        function [e, R] = rotate(e, format, input, varargin)
             % Rotates the environment map based on various types of input
             % rotation formats
             %
-            %   e = e.rotate(conversionFormat, input, <tolerance>, <checks>)
+            %   e = e.rotate(format, input, <tolerance>, <checks>)
             %
-            %   'conversionFormat' can be either:
+            %   'format' can be either:
             %       - 'DCM'  : direct cosine matrix (input = 3x3 matrix)
             %       - 'EA###': euler angles (input = [psi, theta, phi])
             %       - 'EV'   : euler rotation vector & angle (input = [vec angle])
             %       - 'Q'    : quaternion (input = [q1 q2 q3 q4])
             % 
             % See also:
-            %   SpinCalc.m
+            %   SpinCalc
+            %   rotationMatrixFromSpinCalcInput
             
             % Get the world coordinates
             [dx, dy, dz, valid] = e.worldCoordinates();
