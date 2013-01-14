@@ -248,6 +248,17 @@ classdef EnvironmentMap
             m = mean(reshape(e.data(valid(:,:,ones(1, e.nbands))), [], e.nbands), 1);
         end
         
+        function m = times(a1, a2)
+            % check which one of the arguments is an Environment Map
+            if isa(a1, 'EnvironmentMap')
+                m = a1;
+                m.data = a1.data.*a2;
+            else
+                m = a2;
+                m.data = a2.data.*a1;
+            end
+        end
+        
         function display(e)
             fprintf('EnvironmentMap, [%dx%dx%d], %s\n', ...
                 e.nrows, e.ncols, e.nbands, e.format.char);
