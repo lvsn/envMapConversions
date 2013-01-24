@@ -25,6 +25,9 @@ classdef EnvironmentMap
         
         fisheyeMappingFcn = [];
         fisheyeInverseFcn = [];
+        
+        % Control the background color (invalid environment map image indices)
+        backgroundColor = [];
     end
     
     properties (Dependent, SetAccess = private)
@@ -68,6 +71,8 @@ classdef EnvironmentMap
             dfov = [];
             
             focal = [];
+            
+            bgColor = 0;
             
             parseVarargin(varargin{:});
                         
@@ -184,6 +189,9 @@ classdef EnvironmentMap
                 assert(size(e.data,1) == size(e.data,2), ...
                     'When the format is sphere/angular, both dimensions must be equal.');
             end
+            
+            % set default background color
+            e = e.setBackgroundColor(bgColor(ones(1, e.nbands)));
         end
         
         % getters for the dependent properties
@@ -197,6 +205,32 @@ classdef EnvironmentMap
         
         function nbands = get.nbands(e)
             [~, ~, nbands] = size(e.data);
+        end
+        
+        % setter for the background color
+        function e = setBackgroundColor(e, backgroundColor, valid)
+            % Sets the "background" color
+            %
+            %   e = setBackgroundColor(e, backgroundColor, <valid>)
+            %
+            % 
+            
+            assert(length(backgroundColor) == e.nbands, ...
+                ['Background color must have the same number of dimensions ' ...
+                'as the environment map has channels!']);
+            
+            e.backgroundColor = row(backgroundColor);
+            
+            % actually replace the background color!
+            if nargin < 3
+                [~,~,~,valid] = e.worldCoordinates();
+            else
+                assert(islogical(valid), '''valid'' needs to be logical');
+            end
+            
+            % set background "color"
+            e.data(~valid(:,:,ones(1,e.nbands))) = ...
+                column(e.backgroundColor(ones(nnz(~valid), 1), :));
         end
         
         % additional overloads
@@ -348,12 +382,12 @@ classdef EnvironmentMap
             
             % Put in image coordinates
             [u, v] = e.world2image(dx, dy, dz);
-
-            % Interpolate
-            e = e.interpolate(u, v, valid);
             
             % Change format
             e.format = tgtFormat;            
+
+            % Interpolate
+            e = e.interpolate(u, v, valid);
         end
         
         function e = interpolate(e, u, v, valid)
@@ -365,9 +399,10 @@ classdef EnvironmentMap
                     e.data(:, :, c), ...
                     u(:), v(:)), size(envMap,1), size(envMap,2));
             end
-            valid = valid & any(~isnan(envMap), 3);
-            envMap(~valid(:,:,ones(1,e.nbands))) = 0;
             e.data = envMap;
+
+            valid = valid & any(~isnan(envMap), 3);
+            e = e.setBackgroundColor(e.backgroundColor, valid);
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
