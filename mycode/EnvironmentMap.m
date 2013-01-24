@@ -100,7 +100,7 @@ classdef EnvironmentMap
                         e.data = zeros(input, input*2);
                         
                     case EnvironmentMapFormat.Cube
-                        e.data = zeros(4*dims, 3*dims);
+                        e.data = zeros(input, round(3/4*input));
                         
                     otherwise
                         % square data
@@ -514,7 +514,42 @@ classdef EnvironmentMap
         
         function [u, v] = world2cube(~, x, y, z)
             % world -> cube
-            error('world2cube: fixme');
+            u = zeros(size(x));
+            v = zeros(size(x));
+            
+            % forward
+            indForward = find(z <= 0 & z <= -abs(x) & z <= -abs(y));
+            u(indForward) = 1.5 - 0.5 .* x(indForward) ./ z(indForward);
+            v(indForward) = 1.5 + 0.5 .* y(indForward) ./ z(indForward);
+            
+            % backward
+            indBackward = find(z >= 0 & z >= abs(x) & z >= abs(y));
+            u(indBackward) = 1.5 + 0.5 .* x(indBackward) ./ z(indBackward);
+            v(indBackward) = 3.5 + 0.5 .* y(indBackward) ./ z(indBackward);
+            
+            % down
+            indDown = find(y <= 0 & y <= -abs(x) & y <= -abs(z));
+            u(indDown) = 1.5 - 0.5 .* x(indDown) ./ y(indDown);
+            v(indDown) = 2.5 - 0.5 .* z(indDown) ./ y(indDown);
+            
+            % up
+            indUp = find(y >= 0 & y >= abs(x) & y >= abs(z));
+            u(indUp) = 1.5 + 0.5 .* x(indUp) ./ y(indUp);
+            v(indUp) = 0.5 - 0.5 .* z(indUp) ./ y(indUp);
+            
+            % left
+            indLeft = find(x <= 0 & x <= -abs(y) & x <= -abs(z));
+            u(indLeft) = 0.5 + 0.5 .* z(indLeft) ./ x(indLeft);
+            v(indLeft) = 1.5 + 0.5 .* y(indLeft) ./ x(indLeft);
+            
+            % right
+            indRight = find(x >= 0 & x >= abs(y) & x >= abs(z));
+            u(indRight) = 2.5 + 0.5 .* z(indRight) ./ x(indRight);
+            v(indRight) = 1.5 - 0.5 .* y(indRight) ./ x(indRight);
+            
+            % bring back in the [0,1] intervals
+            u = u./3;
+            v = v./4;
         end
         
         function [u, v] = world2octahedral(~, x, y, z)
@@ -608,7 +643,59 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = cube2world(~, u, v)
-            error('cube2world: fixme!');
+%             [u,v] = meshgrid(0:3/(3.*dim-1):3, 0:4/(4.*dim-1):4);
+            % u and v are in the [0,1] interval, so put them back to [0,3]
+            % and [0,4]
+            u = u.*3;
+            v = v.*4;
+
+            x = zeros(size(u)); y = zeros(size(u)); z = zeros(size(u));
+            valid = false(size(u));
+            
+            % up
+            indUp = u >= 1 & u < 2 & v < 1;
+            x(indUp) = (u(indUp) - 1.5) .* 2;
+            y(indUp) = 1;
+            z(indUp) = (v(indUp) - 0.5) .* -2;
+            
+            % left
+            indLeft = u < 1 & v >= 1 & v < 2;
+            x(indLeft) = -1;
+            y(indLeft) = (v(indLeft) - 1.5) .* -2;
+            z(indLeft) = (u(indLeft) - 0.5) .* -2;
+            
+            % forward
+            indForward = u >= 1 & u < 2 & v >= 1 & v < 2;
+            x(indForward) = (u(indForward) - 1.5) .* 2;
+            y(indForward) = (v(indForward) - 1.5) .* -2;
+            z(indForward) = -1;
+            
+            % right
+            indRight = u >= 2 & v >= 1 & v < 2;
+            x(indRight) = 1;
+            y(indRight) = (v(indRight) - 1.5) .* -2;
+            z(indRight) = (u(indRight) - 2.5) .* 2;
+            
+            % down
+            indDown = u >= 1 & u < 2 & v >= 2 & v < 3;
+            x(indDown) = (u(indDown) - 1.5) .* 2;
+            y(indDown) = -1;
+            z(indDown) = (v(indDown) - 2.5) .* 2;
+            
+            % backward
+            indBackward = u >= 1 & u < 2 & v >= 3;
+            x(indBackward) = (u(indBackward) - 1.5) .* 2;
+            y(indBackward) = (v(indBackward) - 3.5) .* 2;
+            z(indBackward) = 1;
+            
+            % normalize
+            norm = sqrt(x.^2 + y.^2 + z.^2);
+            x = x ./ norm;
+            y = y ./ norm;
+            z = z ./ norm;
+            
+            % return valid indices
+            valid(indUp | indLeft | indForward | indRight | indDown | indBackward) = true;
         end
         
         function [x, y, z, valid] = octahedral2world(~, u, v)
