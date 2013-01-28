@@ -589,7 +589,46 @@ classdef EnvironmentMap
         
         function [u, v] = world2octahedral(~, x, y, z)
             % world -> octahedral
-            error('world2octahedral: fixme');
+
+            % Map (x,y,z) to (u,v) in the octahedral map
+            phi = atan2(z, x); % azimuth
+            theta = atan2(sqrt(x.^2+z.^2), y); % zenith
+            
+            u = zeros(size(phi));
+            v = zeros(size(phi));
+            
+            % center part (upper hemisphere)
+            t1 = theta<pi/2 & phi>=0 & phi<pi/2;
+            t2 = theta<pi/2 & phi>=pi/2;
+            t3 = theta<pi/2 & phi<-pi/2;
+            t4 = theta<pi/2 & phi<0 & phi>=-pi/2;
+            
+            % outer part (lower hemisphere)
+            t5 = theta>=pi/2 & phi>=0 & phi<pi/2;
+            t6 = theta>=pi/2 & phi>=pi/2;
+            t7 = theta>=pi/2 & phi<-pi/2;
+            t8 = theta>=pi/2 & phi<0 & phi>=-pi/2;
+            
+            thetap = 2*theta/pi;
+            
+            u(t1) = thetap(t1)./(1+tan(phi(t1)));
+            u(t2) = thetap(t2)./(tan(phi(t2))-1);
+            u(t3) = thetap(t3)./(-tan(phi(t3))-1);
+            u(t4) = thetap(t4)./(1-tan(phi(t4)));
+            
+            u(t5) = ((thetap(t5)-1).*tan(phi(t5))+1)./(tan(phi(t5))+1);
+            u(t6) = ((thetap(t6)-1).*tan(phi(t6))-1)./(1-tan(phi(t6)));
+            u(t7) = -((thetap(t7)-1).*tan(phi(t7))+1)./(tan(phi(t7))+1);
+            u(t8) = ((thetap(t8)-1).*tan(phi(t8))-1)./(tan(phi(t8))-1);
+            
+            v(t1|t5) = thetap(t1|t5)-u(t1|t5);
+            v(t2|t6) = thetap(t2|t6)+u(t2|t6);
+            v(t3|t7) = -thetap(t3|t7)-u(t3|t7);
+            v(t4|t8) = -thetap(t4|t8)+u(t4|t8);
+            
+            % map back to the [0,1] interval (from [-1,1])
+            u = (u+1)./2;
+            v = (v+1)./2;
         end
         
         function [u, v] = world2skyangular(~, x, y, z) 
@@ -734,7 +773,46 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = octahedral2world(~, u, v)
-            error('octahedral2world: fixme!');
+            % Put in the [-1,1] interval
+            u = 2.*u-1;
+            v = 2.*v-1;
+            
+            thetaAngular = zeros(size(u));
+            phiAngular = zeros(size(u));
+            
+            % split into triangles
+            % theta = zenith
+            % phi = azimuth
+            
+            % center part (upper hemisphere)
+            t1 = u>=0 & v>=0 & v<1-u;
+            t2 = u<0 & v>=0 & v<u+1;
+            t3 = u<0 & v<0 & v>=-u-1;
+            t4 = u>=0 & v<0 & v>=u-1;
+            
+            % outer part (lower hemisphere)
+            t5 = u>=0 & v>=0 & v>=1-u;
+            t6 = u<0 & v>= 0 & v>=u+1;
+            t7 = u<0 & v<0 & v<-u-1;
+            t8 = u>=0 & v<0 & v<u-1;
+            
+            thetaAngular(t1|t5) = (v(t1|t5)+u(t1|t5))*pi/2;
+            thetaAngular(t2|t6) = (v(t2|t6)-u(t2|t6))*pi/2;
+            thetaAngular(t3|t7) = (-u(t3|t7)-v(t3|t7))*pi/2;
+            thetaAngular(t4|t8) = (u(t4|t8)-v(t4|t8))*pi/2;
+            
+            phiAngular(t1|t2|t3|t4) = atan2(v(t1|t2|t3|t4),u(t1|t2|t3|t4));
+            phiAngular(t5) = atan2(1-u(t5), 1-v(t5));
+            phiAngular(t6) = atan2(u(t6)+1, v(t6)-1);
+            phiAngular(t7) = -atan2(u(t7)+1, -1-v(t7));
+            phiAngular(t8) = -atan2(1-u(t8), 1+v(t8));
+            
+            x = cos(pi/2-thetaAngular).*cos(phiAngular);
+            z = cos(pi/2-thetaAngular).*sin(phiAngular);
+            y = sin(pi/2-thetaAngular);
+            
+            % everything is valid
+            valid = true(size(u));
         end
         
         function [x, y, z, valid] = sphere2world(~, u, v)
