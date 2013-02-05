@@ -248,6 +248,19 @@ classdef EnvironmentMap
             end
         end
         
+        function imagesc(e, varargin)
+            imagesc(e.data, varargin{:});
+        end
+        
+        % conversion overloads
+        function e = im2double(e)
+            e.data = im2double(e.data);
+        end
+        
+        function e = logical(e)
+            e.data = logical(e.data);
+        end
+        
         function varargout = size(e, varargin)
             varargout{:} = size(e.data, varargin{:}); 
         end
@@ -291,6 +304,10 @@ classdef EnvironmentMap
                 m = a2;
                 m.data = a2.data.*a1;
             end
+        end
+        
+        function e = rdivide(e, f)
+            e.data = e.data ./ f;
         end
         
         function display(e)
