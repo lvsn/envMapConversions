@@ -269,9 +269,9 @@ classdef EnvironmentMap
             varargout{:} = size(e.data, varargin{:}); 
         end
         
-        function e = imresize(e, varargin)
+        function e = imresize(e, arg)
             origSize = [e.nrows, e.ncols];
-            e.data = imresize(e.data, varargin{:});
+            e.data = imresize(e.data, arg, 'bilinear');
             
             if e.format == EnvironmentMapFormat.Stereographic || ...
                     e.format == EnvironmentMapFormat.Fisheye
