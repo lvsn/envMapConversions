@@ -314,6 +314,10 @@ classdef EnvironmentMap
             e.data = e.data ./ f;
         end
         
+        function e = power(e, y)
+            e.data = e.data .^ y;
+        end
+        
         function display(e)
             fprintf('EnvironmentMap, [%dx%dx%d], %s\n', ...
                 e.nrows, e.ncols, e.nbands, e.format.char);
