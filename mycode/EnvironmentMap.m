@@ -192,7 +192,7 @@ classdef EnvironmentMap
             
             % set default background color
             e.backgroundColor = bgColor(ones(1, e.nbands));
-            if ~isequal(bgColor, zeros(1, e.nbands))
+            if ~isequal(e.backgroundColor, zeros(1, e.nbands))
                 % non-default background color
                 e = e.setBackgroundColor(bgColor(ones(1, e.nbands)));
             end
