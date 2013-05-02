@@ -475,6 +475,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.Octahedral
                     [u, v] = e.world2octahedral(x, y, z);
                     
+                case EnvironmentMapFormat.SkyOctahedral
+                    [u, v] = e.world2skyoctahedral(x, y, z);
+                    
                 case EnvironmentMapFormat.Sphere
                     [u, v] = e.world2sphere(x, y, z);
                     
@@ -528,6 +531,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.Octahedral
                     [x, y, z, valid] = e.octahedral2world(u, v);
+                    
+                case EnvironmentMapFormat.SkyOctahedral
+                    [x, y, z, valid] = e.skyoctahedral2world(u, v);
                     
                 case EnvironmentMapFormat.Sphere
                     [x, y, z, valid] = e.sphere2world(u, v);
@@ -654,6 +660,40 @@ classdef EnvironmentMap
             % map back to the [0,1] interval (from [-1,1])
             u = (u+1)./2;
             v = (v+1)./2;
+        end
+        
+        function [u, v] = world2skyoctahedral(~, x, y, z)
+            % world -> skyoctahedral
+            
+            % Map (x,y,z) to (u,v) in the skyoctahedral map
+            phi = atan2(z, x); % azimuth
+            theta = atan2(sqrt(x.^2+z.^2), y); % zenith
+            
+            u = zeros(size(phi));
+            v = zeros(size(phi));
+          
+            % split into bins (only upper hemisphere)
+            t1 = theta<pi/2 & phi>=-pi/4 & phi<pi/4;
+            t2 = theta<pi/2 & phi>=pi/4 & phi<3*pi/4;
+            t3 = theta<pi/2 & (phi>=3*pi/4 | phi<-3*pi/4);
+            t4 = theta<pi/2 & phi>=-3*pi/4 & phi<-pi/4;
+            
+            thetap = 2*theta/pi;
+            tanphi = tan(phi);
+            
+            u(t1) = thetap(t1);
+            u(t2) = thetap(t2)./tanphi(t2);
+            u(t3) = -thetap(t3);
+            u(t4) = -thetap(t4)./tanphi(t4);
+            
+            v(t1) = thetap(t1).*tanphi(t1);
+            v(t2) = thetap(t2);
+            v(t3) = -thetap(t3).*tanphi(t3);
+            v(t4) = -thetap(t4);
+            
+            % map back to the [0,1] interval (from [-1,1])
+            u = (u+1)./2;
+            v = (-v+1)./2;
         end
         
         function [u, v] = world2skyangular(~, x, y, z) 
@@ -831,6 +871,34 @@ classdef EnvironmentMap
             phiAngular(t6) = atan2(u(t6)+1, v(t6)-1);
             phiAngular(t7) = -atan2(u(t7)+1, -1-v(t7));
             phiAngular(t8) = -atan2(1-u(t8), 1+v(t8));
+            
+            x = cos(pi/2-thetaAngular).*cos(phiAngular);
+            z = cos(pi/2-thetaAngular).*sin(phiAngular);
+            y = sin(pi/2-thetaAngular);
+            
+            % everything is valid
+            valid = true(size(u));
+        end
+        
+        function [x, y, z, valid] = skyoctahedral2world(~, u, v)
+            % Put in the [-1,1] interval
+            u = 2.*u-1;
+            v = -(2.*v-1);
+            
+            thetaAngular = zeros(size(u));
+            
+            % center part (upper hemisphere)
+            t1 = u>=v & u>=-v;
+            t2 = u>=v & u<-v;
+            t3 = u<v & u<-v;
+            t4 = u<v & u>=-v;
+            
+            thetaAngular(t1) = u(t1)*pi/2;
+            thetaAngular(t2) = -v(t2)*pi/2;
+            thetaAngular(t3) = -u(t3)*pi/2;
+            thetaAngular(t4) = v(t4)*pi/2;
+            
+            phiAngular = atan2(v, u);
             
             x = cos(pi/2-thetaAngular).*cos(phiAngular);
             z = cos(pi/2-thetaAngular).*sin(phiAngular);

@@ -8,14 +8,15 @@ classdef EnvironmentMapFormat
     %       (just the top half of the hemisphere, looking towards zenith)
     %   - Cube
     %   - Octahedral
+    %   - SkyOctahedral
     %   - Sphere
     %   - SkySphere
     %   - Fisheye (r = f*theta)
     %   - Stereographic (specific type of fisheye, r = 2r tan(theta/2))
     
     enumeration
-        LatLong, Angular, SkyAngular, Cube, Octahedral, Sphere, SkySphere, ...
-            Fisheye, Stereographic
+        LatLong, Angular, SkyAngular, Cube, Octahedral, SkyOctahedral, ...
+            Sphere, SkySphere, Fisheye, Stereographic
     end
     
     methods (Static)
