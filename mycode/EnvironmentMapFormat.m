@@ -1,5 +1,6 @@
 classdef EnvironmentMapFormat
-    % Represents the various kinds of environment map formats
+    % Enumeration class to represent the various kinds of formats supported by
+    % the EnvironmentMap class.
     %   
     %   Currently:
     %   - LatLong (latitude-longitude)
