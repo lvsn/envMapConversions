@@ -418,11 +418,25 @@ classdef EnvironmentMap
         function e = interpolate(e, u, v, valid)
             % Interpolate to get the desired pixel values
             envMap = zeros(size(u, 1), size(u, 2), e.nbands);
+            
+            % Interpolate at pixel _centers_
+            cols = linspace(0, 1, e.ncols*2+1); cols = cols(2:2:end);
+            rows = linspace(0, 1, e.nrows*2+1); rows = rows(2:2:end);
+            
+            % pad the image
+            tmpData = e.data;
+            tmpData = [tmpData(:,1,:) tmpData tmpData(:,end,:)];
+            tmpData = [tmpData(1,:,:); tmpData; tmpData(end,:,:)];
+            
+            % adjust the column and row indices
+            cols = [cols(1)-2*cols(1) cols cols(end)+2*cols(1)];
+            rows = [rows(1)-2*rows(1) rows rows(end)+2*rows(1)];
+            
             for c=1:size(envMap,3)
                 envMap(:, :, c) = reshape(...
-                    interp2(linspace(0,1,e.ncols), linspace(0,1,e.nrows), ...
-                    e.data(:, :, c), ...
-                    u(:), v(:)), size(envMap,1), size(envMap,2));
+                    interp2(cols, rows, tmpData(:,:,c), ...
+                    u(:), v(:), 'linear'), ...
+                    size(envMap,1), size(envMap,2));
             end
             e.data = envMap;
 
@@ -436,7 +450,12 @@ classdef EnvironmentMap
             %
             %   [x, y, z, valid] = e.worldCoordinates()
             %
-            [u, v] = meshgrid(linspace(0, 1, e.ncols), linspace(0, 1, e.nrows));
+            
+            % Compute coordinates of pixel _centers_
+            cols = linspace(0, 1, e.ncols*2+1); cols = cols(2:2:end);
+            rows = linspace(0, 1, e.nrows*2+1); rows = rows(2:2:end);
+            
+            [u, v] = meshgrid(cols, rows);
             [x, y, z, valid] = e.image2world(u, v);
         end
         
