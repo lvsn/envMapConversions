@@ -50,12 +50,12 @@ classdef EnvironmentMapFormat
                     fprintf('Available formats: \n');
                     fprintf('%s\n', names{:});
                     
-                    error('envmapFormat:badformat', ...
+                    error('EnvironmentMapFormat:badformat', ...
                         'Unsupported format %s.', input);
                 end
                 
             else
-                error('envmapFormat:badformat', ...
+                error('EnvironmentMapFormat:badformat', ...
                     'Unsupported input for format conversion.');
             end
         end
