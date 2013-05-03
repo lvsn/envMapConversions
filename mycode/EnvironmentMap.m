@@ -1071,14 +1071,27 @@ classdef EnvironmentMap
             % Test the solid angle computation
             fprintf('*** Test 1: Solid Angles ***\n\n')
             for i_f = 1:length(formatNames)
-                fprintf('\t % 15s, ', formatNames{i_f});
+                fprintf('\t % 15s: ', formatNames{i_f});
                 
                 e = EnvironmentMap(1000, formatNames{i_f});
                 a = e.solidAngles();
                 
                 % Report factor of pi;
                 factor = sum(a(~isnan(a)))/pi;
-                fprintf('Sum of solid angles = %.2f*pi\n', factor);
+                
+                % Make sure it's either 4 (full sphere) or 2 (half sphere)
+                if ~isempty(strfind(formatNames{i_f}, 'Sky'))
+                    tgtFactor = 2;
+                else
+                    tgtFactor = 4;
+                end
+                isOk = abs(factor-tgtFactor) < 1e-2;
+                if isOk
+                    fprintf('PASSED! (factor = %.2f*pi)\n', factor);
+                else
+                    fprintf('** FAILED! (factor = %.2f*pi, desired = %.2f*pi) ** \n', ...
+                        factor, tgtFactor);
+                end
             end
         end
         
