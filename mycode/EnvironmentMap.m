@@ -336,6 +336,45 @@ classdef EnvironmentMap
             end
         end
         
+        function omega = solidAngles(e)
+            % Computes the solid angle subtended by each pixel
+            
+            % Compute coordinates of pixel borders
+            cols = linspace(0, 1, e.ncols+1);
+            rows = linspace(0, 1, e.nrows+1);
+            
+            [u, v] = meshgrid(cols, rows);
+            [dx, dy, dz] = e.image2world(u, v);
+            
+            % We'll split each pixel into two triangles, and compute the
+            % solid angle subtended by the two tetrahedron
+            
+            a = [row(dx(1:end-1, 1:end-1)); ...
+                 row(dy(1:end-1, 1:end-1)); ...
+                 row(dz(1:end-1, 1:end-1))];
+            
+            b = [row(dx(1:end-1, 2:end)); ...
+                 row(dy(1:end-1, 2:end)); ...
+                 row(dz(1:end-1, 2:end))];
+            
+            c = [row(dx(2:end, 1:end-1)); ...
+                 row(dy(2:end, 1:end-1)); ...
+                 row(dz(2:end, 1:end-1))];
+             
+            d = [row(dx(2:end, 2:end)); ...
+                 row(dy(2:end, 2:end)); ...
+                 row(dz(2:end, 2:end))];
+             
+            omega = tetrahedronSolidAngle(a, b, c);
+            omega = omega + tetrahedronSolidAngle(b, c, d);
+            
+            % Get pixel centers coordinates
+            [~, ~, ~, valid] = e.worldCoordinates();
+            omega(~valid) = NaN;
+            
+            omega = reshape(omega, e.nrows, e.ncols);
+        end
+                
         function [e, R] = rotate(e, format, input, varargin)
             % Rotates the environment map based on various types of input
             % rotation formats
