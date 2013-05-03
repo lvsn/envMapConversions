@@ -1051,5 +1051,37 @@ classdef EnvironmentMap
         end
 
     end
+    
+    methods (Static)
+        function testEnvironmentMapClass
+            % Unit test for the EnvironmentMap class.
+            %
+            %   EnvironmentMap.testEnvironmentMapClass
+            %
+            % Will report diagnostic on the command line. 
+            % Should be run prior to pushing major changes!
+            %
+                
+            % We'll want to test every format 
+            % (except perhaps Fisheye and Stereographic...)
+            [~, formatNames] = enumeration('EnvironmentMapFormat');
+            formatNames(strcmp(formatNames, 'Fisheye')) = [];
+            formatNames(strcmp(formatNames, 'Stereographic')) = [];
+
+            % Test the solid angle computation
+            fprintf('*** Test 1: Solid Angles ***\n\n')
+            for i_f = 1:length(formatNames)
+                fprintf('\t % 15s, ', formatNames{i_f});
+                
+                e = EnvironmentMap(1000, formatNames{i_f});
+                a = e.solidAngles();
+                
+                % Report factor of pi;
+                factor = sum(a(~isnan(a)))/pi;
+                fprintf('Sum of solid angles = %.2f*pi\n', factor);
+            end
+        end
+        
+    end
 end
 
