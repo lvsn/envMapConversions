@@ -43,16 +43,21 @@ classdef EnvironmentMapFormat
             elseif ischar(input)
                 % find nearest string. 
                 % 
-                [~, names] = enumeration('EnvironmentMapFormat');
+                [members, names] = enumeration('EnvironmentMapFormat');
                 
                 % make sure that format exists
-                if nnz(strcmpi(names, input)) ~= 1
+                formatInd = strcmpi(names, input);
+                
+                if nnz(formatInd) ~= 1
                     fprintf('Available formats: \n');
                     fprintf('%s\n', names{:});
                     
                     error('EnvironmentMapFormat:badformat', ...
                         'Unsupported format %s.', input);
                 end
+                
+                % return desired format
+                f = members(formatInd);
                 
             else
                 error('EnvironmentMapFormat:badformat', ...
