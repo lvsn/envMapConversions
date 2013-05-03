@@ -42,14 +42,20 @@ classdef EnvironmentMapFormat
             elseif ischar(input)
                 % find nearest string. 
                 % 
-                [members, names] = enumeration('EnvironmentMapFormat');
+                [~, names] = enumeration('EnvironmentMapFormat');
                 
-                dists = cellfun(@(s) strdist(lower(input), s), lower(names));
-                [~,mind] = min(dists);
+                % make sure that format exists
+                if nnz(strcmpi(names, input)) ~= 1
+                    fprintf('Available formats: \n');
+                    fprintf('%s\n', names{:});
+                    
+                    error('envmapFormat:badformat', ...
+                        'Unsupported format %s.', input);
+                end
                 
-                f = members(mind);
             else
-                error('Unsupported input for format conversion.');
+                error('envmapFormat:badformat', ...
+                    'Unsupported input for format conversion.');
             end
         end
     end
