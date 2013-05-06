@@ -79,22 +79,43 @@ classdef EnvironmentMap
             if ischar(input)
                 % we're given the filename
                 filename = input;
-                [~,~,ext] = fileparts(filename);
                 
-                switch (ext)
-                    case '.hdr'
-                        % hdrread is from matlab's image processing toolbox
-                        e.data = im2double(hdrread(filename));
-                        
-                    case '.exr'
-                        % exrread requires the MatlabEXR package
-                        % from K. Johnson
-                        e.data = exrread(filename);
-                        
-                    otherwise
-                        % we'll just rely on imread
-                        e.data = im2double(imread(filename));
-                        
+                if ~exist('hdr_imread', 'file')
+                    warning('EnvironmentMap:nohdr', ...
+                        ['Install the ''hdrutils'' package to '...
+                        'support HDR inputs.']);
+                    
+                    % defaults to imread
+                    imreadFun = @imread;
+                else
+                    % use the hdr_imread function
+                    imreadFun = @hdr_imread;
+                    
+                end
+                
+                e.data = imreadFun(filename);
+                
+                % check for accompanying metadata
+                [e, exists] = e.readMetadataFile(filename);
+                if ~exists
+                    assert(exist('format', 'var')>0, ...
+                        'Metadata file not found. Must specify format');
+                    
+                    e.format = EnvironmentMapFormat.format(format);
+                    
+                    % there was no meta-data file. Save one for next time.
+                    e.writeMetadataFile(filename);
+                    
+                else
+                    if (exist('format', 'var')>0 && ...
+                            e.format ~= EnvironmentMapFormat.format(format))
+                        warning('EnvironmentMap:badformat', ...
+                            ['Over-riding input format (%s) with the one' ...
+                            ' found in the meta-data file (%s)'], ...
+                            char(format), char(e.format));
+                    end
+                    
+                    format = e.format;
                 end
                 
             elseif isscalar(input)
@@ -243,6 +264,10 @@ classdef EnvironmentMap
             if exist('imshowHDR', 'file')
                 imshowFcn = @imshowHDR;
             else
+                warning('EnvironmentMap:nohdr', ...
+                    ['Install the ''hdrutils'' package to '...
+                    'display HDR data.']);
+
                 imshowFcn = @imshow;
             end
             if nargout > 0
@@ -291,7 +316,11 @@ classdef EnvironmentMap
         end
         
         function imwrite(e, varargin)
+            % write image data
             hdr_imwrite(e.data, varargin{:});
+            
+            % also save metadata file containing additional information.
+            e.writeMetadataFile(varargin{1});
         end
         
         function m = mean(e)
@@ -1048,6 +1077,47 @@ classdef EnvironmentMap
             z = sin(theta);
             
             valid = true(size(u)); % all valid
+        end
+        
+        
+        % read meta-data from XML file
+        function [e, exists] = readMetadataFile(e, inFile)
+            metadataFile = e.getMetadataFile(inFile);
+            
+            if ~exist(metadataFile, 'file')
+                % file doesn't exist. 
+                exists = false;
+                
+            else
+                xmlInfo = load_xml(metadataFile);
+                exists = true;
+                
+                % fill in the information from the XML file
+                e.format = EnvironmentMapFormat.format(xmlInfo.data.format);
+            end
+            
+        end
+        
+        % write meta-data to XML file
+        function writeMetadataFile(e, outFile)
+            metadataFile = e.getMetadataFile(outFile);
+            
+            % select what to store
+            xmlInfo.version = 1;
+            
+            % store format
+            xmlInfo.data.format = char(e.format);
+            
+            % store full path to data file
+            xmlInfo.data.file = outFile;
+
+            % save information
+            write_xml(metadataFile, xmlInfo);
+        end
+        
+        function metadataFile = getMetadataFile(~, baseFile)
+            [b, f] = fileparts(baseFile);
+            metadataFile = fullfile(b, [f '.meta.xml']);
         end
 
     end
