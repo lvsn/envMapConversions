@@ -290,6 +290,10 @@ classdef EnvironmentMap
             e.data = logical(e.data);
         end
         
+        function e = double(e)
+            e.data = double(e.data);
+        end
+        
         function varargout = size(e, varargin)
             varargout{:} = size(e.data, varargin{:}); 
         end
