@@ -492,8 +492,8 @@ classdef EnvironmentMap
             envMap = zeros(size(u, 1), size(u, 2), e.nbands);
             
             % Interpolate at pixel _centers_
-            cols = linspace(0, 1, e.ncols*2+1); cols = cols(2:2:end);
-            rows = linspace(0, 1, e.nrows*2+1); rows = rows(2:2:end);
+            [cols, rows] = e.imageCoordinates();
+            cols = row(cols(1, 1:end)); rows = row(rows(1:end, 1));
             
             % pad the image
             tmpData = e.data;
@@ -517,20 +517,30 @@ classdef EnvironmentMap
         end
         
         function [x, y, z, valid] = worldCoordinates(e)
-            % Returns the [x,y,z] world coordinates for each pixel in the
-            % environment map
+            % Returns the [x,y,z] world coordinates for each pixel center
             %
             %   [x, y, z, valid] = e.worldCoordinates()
             %
             
             % Compute coordinates of pixel _centers_
-            cols = linspace(0, 1, e.ncols*2+1); cols = cols(2:2:end);
-            rows = linspace(0, 1, e.nrows*2+1); rows = rows(2:2:end);
-            
-            [u, v] = meshgrid(cols, rows);
+            [u, v] = e.imageCoordinates();
             [x, y, z, valid] = e.image2world(u, v);
         end
         
+        function [u, v] = imageCoordinates(e)
+            % Returns the [u,v] coordinates for each pixel center
+            %
+            %   [u, v] = e.imageCoordinates()
+            %
+            % Both [u,v] will be in the [0,1] interval
+            %
+            
+            cols = linspace(0, 1, e.ncols*2+1); cols = cols(2:2:end);
+            rows = linspace(0, 1, e.nrows*2+1); rows = rows(2:2:end);
+
+            [u, v] = meshgrid(cols, rows);
+        end
+
         function [u, v] = world2image(e, x, y, z)
             % Returns the [u,v] coordinates (in the [0,1] interval)
             %
