@@ -81,6 +81,8 @@ classdef EnvironmentMap
             bgColor = 0;
             
             parseVarargin(varargin{:});
+            
+            e.calibrationModel = calibModel;
                         
             if ischar(input)
                 % we're given the filename
@@ -203,14 +205,13 @@ classdef EnvironmentMap
                     e.fisheyeInverseFcn = @(r) r./e.focalLength;
                     
                 case EnvironmentMapFormat.Omnidirectional
-                    assert(~isempty(calibModel), ...
+                    assert(~isempty(e.calibrationModel), ...
                         'Omnidirectional format requires calibration model');
-                    
-                    e.calibrationModel = calibModel;
                     
                     % resize according to dimensions in the model
                     e.data = imresize(e.data, [size(e.data, 1), ...
-                        size(e.data,1)*calibModel.width/calibModel.height]);
+                        size(e.data,1)*e.calibrationModel.width/...
+                        e.calibrationModel.height]);
                     
                 otherwise
                     assert(isempty(hfov), ...
@@ -1213,6 +1214,12 @@ classdef EnvironmentMap
                 
                 % fill in the information from the XML file
                 e.format = EnvironmentMapFormat.format(xmlInfo.data.format);
+                
+                % check for the calibration model information
+                if isfield(xmlInfo, 'calibrationModel')
+                    e.calibrationModel = xmlInfo.calibrationModel;
+                    e.calibrationModel.ss = vertcat(e.calibrationModel.ss(:).s);
+                end
             end
             
         end
@@ -1229,6 +1236,13 @@ classdef EnvironmentMap
             
             % store full path to data file
             xmlInfo.data.file = outFile;
+            
+            % store calibration model
+            if ~isempty(e.calibrationModel)
+                xmlInfo.calibrationModel = e.calibrationModel;
+                xmlInfo.calibrationModel.ss = ...
+                    arrayfun(@(s) struct('s', s), xmlInfo.calibrationModel.ss);
+            end
 
             % save information
             write_xml(metadataFile, xmlInfo);
