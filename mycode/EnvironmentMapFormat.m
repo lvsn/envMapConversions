@@ -14,10 +14,13 @@ classdef EnvironmentMapFormat
     %   - SkySphere
     %   - Fisheye (r = f*theta)
     %   - Stereographic (specific type of fisheye, r = 2r tan(theta/2))
+    %   - Omnidirectional (could be fisheye, catadioptric, etc. See
+    %       documentation for the OCamCalib toolbox by Davide Scaramuzza at 
+    %       https://sites.google.com/site/scarabotix/ocamcalib-toolbox
     
     enumeration
         LatLong, Angular, SkyAngular, Cube, Octahedral, SkyOctahedral, ...
-            Sphere, SkySphere, Fisheye, Stereographic
+            Sphere, SkySphere, Fisheye, Stereographic, Omnidirectional
     end
     
     methods (Static)

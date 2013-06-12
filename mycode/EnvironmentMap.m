@@ -23,6 +23,9 @@ classdef EnvironmentMap
         hFov = [];
         vFov = [];
         
+        % calibration model for the omnidirectional format
+        calibrationModel = [];
+        
         fisheyeMappingFcn = [];
         fisheyeInverseFcn = [];
         
@@ -71,6 +74,9 @@ classdef EnvironmentMap
             dfov = [];
             
             focal = [];
+            
+            % calibration model for the omnidirectional format
+            calibModel = [];
             
             bgColor = 0;
             
@@ -196,10 +202,19 @@ classdef EnvironmentMap
                     % the inverse function is theta = r/f;
                     e.fisheyeInverseFcn = @(r) r./e.focalLength;
                     
+                case EnvironmentMapFormat.Omnidirectional
+                    assert(~isempty(calibModel), ...
+                        'Omnidirectional format requires calibration model');
+                    
+                    e.calibrationModel = calibModel;
+                    
+                    % resize according to dimensions in the model
+                    e.data = imresize(e.data, [size(e.data, 1), ...
+                        size(e.data,1)*calibModel.width/calibModel.height]);
                     
                 otherwise
-                assert(isempty(hfov), ...
-                    'Use the "Stereographic" format when specifying a field of view');
+                    assert(isempty(hfov), ...
+                        'Use the "Stereographic" format when specifying a field of view');
             end
             
             % check for input validity
@@ -589,6 +604,9 @@ classdef EnvironmentMap
                         EnvironmentMapFormat.Stereographic}
                     [u, v] = e.world2fisheye(x, y, z);
                     
+                case EnvironmentMapFormat.Omnidirectional
+                    [u, v] = e.world2omnidirectional(x, y, z);
+                    
                 otherwise
                     error('EnvironmentMap:world2image', ...
                         'Unsupported format: %s', e.format.char);
@@ -647,6 +665,9 @@ classdef EnvironmentMap
                     
                 case EnvironmentMapFormat.Stereographic
                     [x, y, z, valid] = e.fisheye2world(u, v);
+                    
+                case EnvironmentMapFormat.Omnidirectional
+                    [x, y, z, valid] = e.omnidirectional2world(u, v);
                     
                 otherwise
                     error('EnvironmentMap:image2world', ...
@@ -853,6 +874,50 @@ classdef EnvironmentMap
             % camera is pointing in the negative z direction
             u(z > 0) = -1;
             v(z > 0) = -1;
+        end
+        
+        function [u, v] = world2omnidirectional(e, x, y, z)
+            % world -> omnidirectional
+            assert(~isempty(e.calibrationModel));
+            
+            theta = pi/2-atan2(-z,sqrt(x.^2 + y.^2));
+            phi = atan2(y, x);
+            
+            % convert angles back to pixels according to calibration data
+            
+            p = e.calibrationModel.ss(end:-1:1);
+                        
+            % technically, we'd have to find roots of polynomials like so:
+            % r = arrayfun(@(t) roots([row(p(1:2)) p(3)-t p(4)]), tan(theta))
+            % but this is crazy expensive. Instead, we're going to assume
+            % the function is monotonic and use interpolation to invert the
+            % polynomial
+            maxRadius = sqrt((e.calibrationModel.width/2).^2 + ...
+                (e.calibrationModel.height/2).^2) * 1.5;
+            r = linspace(0, maxRadius, 1000);
+            t = atan2(r, -polyval(p, r));
+            
+            radius = interp1(t, r, theta);
+            radius = abs(p(end)).*theta;
+            
+            % (xp,yp) are in pixels
+            yp = radius.*cos(phi);
+            xp = -radius.*sin(phi);
+            
+            % apply affine transformation
+            A = [e.calibrationModel.c e.calibrationModel.d; ...
+                e.calibrationModel.e 1];
+            
+            xc = e.calibrationModel.xc;
+            yc = e.calibrationModel.yc;
+            
+            b = A*[row(xp); row(yp)] + repmat([xc; yc], 1, numel(xp));
+            x = reshape(b(1,:), size(xp));
+            y = reshape(b(2,:), size(yp));
+            
+            % bring (u,v) in the [0,1] interval
+            u = y./e.calibrationModel.width;
+            v = x./e.calibrationModel.height;
         end
         
         function [x, y, z, valid] = latlong2world(~, u, v)
@@ -1093,6 +1158,46 @@ classdef EnvironmentMap
             valid = true(size(u)); % all valid
         end
         
+        function [x, y, z, valid] = omnidirectional2world(e, u, v)
+            % (u,v) are in the [0,1] interval
+            assert(~isempty(e.calibrationModel), ...
+                'Must have a calibration model for the omnidirectional format');
+            
+            % compute phi using the [-1,1] interval
+            uPhi = u*2-1;
+            vPhi = v*2-1;
+            phi = -atan2(vPhi, uPhi);
+            
+            % put in the [0, ncols], [0, nrows] dimensions
+            y = u.*e.calibrationModel.width;
+            x = v.*e.calibrationModel.height;
+            
+            % apply inverse affine transform
+            A = [e.calibrationModel.c e.calibrationModel.d; ...
+                e.calibrationModel.e 1];
+            
+            b = A\[row(x)-e.calibrationModel.xc; row(y)-e.calibrationModel.yc];
+            xp = reshape(b(1,:), size(x));
+            yp = reshape(b(2,:), size(y));
+            
+            % compute radius
+            radius = sqrt(xp.^2 + yp.^2);
+            
+            % compute angle from radius according to polynomial model
+            % See 'show_calib_results.m' from the OCamCalib toolbox code...
+            p = e.calibrationModel.ss(end:-1:1);
+            theta = radius./abs(p(end)) - pi/2;
+            phi = -atan2(xp, yp);
+            
+            % convert back to x, y, z from spherical angles.
+            x = cos(theta).*cos(phi);
+            y = cos(theta).*sin(phi);
+            z = sin(theta);
+            
+            valid = radius < min(e.calibrationModel.width/2, ...
+                e.calibrationModel.height/2);
+        end
+            
         
         % read meta-data from XML file
         function [e, exists] = readMetadataFile(e, inFile)
@@ -1151,6 +1256,7 @@ classdef EnvironmentMap
             [~, formatNames] = enumeration('EnvironmentMapFormat');
             formatNames(strcmp(formatNames, 'Fisheye')) = [];
             formatNames(strcmp(formatNames, 'Stereographic')) = [];
+            formatNames(strcmp(formatNames, 'Omnidirectional')) = [];
 
             % Test the solid angle computation
             fprintf('*** Test 1: Solid Angles ***\n\n')
