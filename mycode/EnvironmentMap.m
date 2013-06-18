@@ -26,6 +26,9 @@ classdef EnvironmentMap
         % calibration model for the omnidirectional format
         calibrationModel = [];
         
+        % date number 
+        dateNumber = [];
+        
         fisheyeMappingFcn = [];
         fisheyeInverseFcn = [];
         
@@ -78,11 +81,15 @@ classdef EnvironmentMap
             % calibration model for the omnidirectional format
             calibModel = [];
             
+            % date/time information (in datenum format. See help datevec)
+            dateNum = [];
+            
             bgColor = 0;
             
             parseVarargin(varargin{:});
             
             e.calibrationModel = calibModel;
+            e.dateNumber = dateNum;
                         
             if ischar(input)
                 % we're given the filename
@@ -1220,6 +1227,13 @@ classdef EnvironmentMap
                     e.calibrationModel = xmlInfo.calibrationModel;
                     e.calibrationModel.ss = vertcat(e.calibrationModel.ss(:).s);
                 end
+                
+                % check for date number information
+                if isfield(xmlInfo, 'date')
+                    date = xmlInfo.date;
+                    e.dateNumber = datenum(date.year, date.month, date.day, ...
+                        date.hour, date.minute, date.second);
+                end
             end
             
         end
@@ -1242,6 +1256,16 @@ classdef EnvironmentMap
                 xmlInfo.calibrationModel = e.calibrationModel;
                 xmlInfo.calibrationModel.ss = ...
                     arrayfun(@(s) struct('s', s), xmlInfo.calibrationModel.ss);
+            end
+            
+            % store date number
+            if ~isempty(e.dateNumber)
+                % it's more easy to parse the date directly when looking at
+                % the XML file. store the date
+                [y,m,d,h,mn,s] = datevec(e.dateNumber);
+                
+                xmlInfo.date = struct('year', y, 'month', m, 'day', d, ...
+                    'hour', h, 'minute', mn, 'second', s);
             end
 
             % save information
