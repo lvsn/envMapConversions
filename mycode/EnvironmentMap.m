@@ -29,6 +29,9 @@ classdef EnvironmentMap
         % date number 
         dateNumber = [];
         
+        % exposure value
+        exposureValue = [];
+        
         fisheyeMappingFcn = [];
         fisheyeInverseFcn = [];
         
@@ -81,6 +84,9 @@ classdef EnvironmentMap
             % calibration model for the omnidirectional format
             calibModel = [];
             
+            % exposure value
+            ev = [];
+            
             % date/time information (in datenum format. See help datevec)
             dateNum = [];
             
@@ -90,6 +96,7 @@ classdef EnvironmentMap
             
             e.calibrationModel = calibModel;
             e.dateNumber = dateNum;
+            e.exposureValue = ev;
                         
             if ischar(input)
                 % we're given the filename
@@ -359,19 +366,48 @@ classdef EnvironmentMap
             % check which one of the arguments is an Environment Map
             if isa(a1, 'EnvironmentMap')
                 m = a1;
-                m.data = a1.data.*a2;
+                f = a2;
+                m.data = a1.data.*f;
             else
                 m = a2;
-                m.data = a2.data.*a1;
+                f = a1;
+                m.data = a2.data.*f;
+            end
+            
+            % adapt the exposure value
+            if ~isempty(m.exposureValue)
+                m.exposureValue = m.exposureValue - log2(f);
             end
         end
         
         function e = rdivide(e, f)
             e.data = e.data ./ f;
+            
+            % adapt the exposure value
+            if ~isempty(e.exposureValue)
+                e.exposureValue = e.exposureValue + log2(f);
+            end
+        end
+        
+        function e = reExpose(e, tgtEV)
+            if ~isempty(e.exposureValue)
+                % convenience wrapper to re-expose an environment map
+                e = reExposeImage(e, e.exposureValue, tgtEV);
+            else
+                error('EnvironmentMap:reExpose', ...
+                    'Unknown EV, cannot re-expose');
+            end
         end
         
         function e = power(e, y)
             e.data = e.data .^ y;
+            
+            % this should invalidate the exposure value
+            if ~isempty(e.exposureValue)
+                warning('EnvironmentMap:powerEV', ...
+                    'Taking the power resets the exposure value');
+                e.exposureValue = [];
+            end
         end
         
         function display(e)
@@ -1234,6 +1270,11 @@ classdef EnvironmentMap
                     e.dateNumber = datenum(date.year, date.month, date.day, ...
                         date.hour, date.minute, date.second);
                 end
+                
+                % check for exposure value information
+                if isfield(xmlInfo, 'exposure')
+                    e.exposureValue = xmlInfo.exposure.EV;
+                end
             end
             
         end
@@ -1266,6 +1307,11 @@ classdef EnvironmentMap
                 
                 xmlInfo.date = struct('year', y, 'month', m, 'day', d, ...
                     'hour', h, 'minute', mn, 'second', s);
+            end
+            
+            % store exposure value
+            if ~isempty(e.exposureValue)
+                xmlInfo.exposure.EV = e.exposureValue;
             end
 
             % save information
