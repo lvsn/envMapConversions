@@ -958,7 +958,7 @@ classdef EnvironmentMap
             t = atan2(r, -polyval(p, r));
             
             radius = interp1(t, r, theta);
-            radius = abs(p(end)).*theta;
+%             radius = abs(p(end)).*theta;
             
             % (xp,yp) are in pixels
             yp = radius.*cos(phi);
@@ -1223,11 +1223,6 @@ classdef EnvironmentMap
             assert(~isempty(e.calibrationModel), ...
                 'Must have a calibration model for the omnidirectional format');
             
-            % compute phi using the [-1,1] interval
-            uPhi = u*2-1;
-            vPhi = v*2-1;
-            phi = -atan2(vPhi, uPhi);
-            
             % put in the [0, ncols], [0, nrows] dimensions
             y = u.*e.calibrationModel.width;
             x = v.*e.calibrationModel.height;
@@ -1246,7 +1241,8 @@ classdef EnvironmentMap
             % compute angle from radius according to polynomial model
             % See 'show_calib_results.m' from the OCamCalib toolbox code...
             p = e.calibrationModel.ss(end:-1:1);
-            theta = radius./abs(p(end)) - pi/2;
+            theta = polyval(p, radius) - pi/2;
+%             theta = radius./abs(p(end)) - pi/2;
             phi = -atan2(xp, yp);
             
             % convert back to x, y, z from spherical angles.
