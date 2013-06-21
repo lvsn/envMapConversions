@@ -92,6 +92,11 @@ classdef EnvironmentMap
             
             bgColor = 0;
             
+            % whether to load the data or not (useful when we want to load
+            % only the meta-data)... is this a hack or is this actually
+            % useful?
+            loadData = true;
+                        
             parseVarargin(varargin{:});
             
             e.calibrationModel = calibModel;
@@ -101,6 +106,11 @@ classdef EnvironmentMap
             if ischar(input)
                 % we're given the filename
                 filename = input;
+                
+                if ~exist(filename, 'file')
+                    error('EnvironmentMap:loadFile', ...
+                        'File %s doesn''t exist!', filename);
+                end
                 
                 if ~exist('hdr_imread', 'file')
                     warning('EnvironmentMap:nohdr', ...
@@ -112,7 +122,10 @@ classdef EnvironmentMap
                 else
                     % use the hdr_imread function
                     imreadFun = @hdr_imread;
-                    
+                end
+                
+                if ~loadData
+                    imreadFun = @(varargin)[];
                 end
                 
                 e.data = imreadFun(filename);
@@ -130,6 +143,7 @@ classdef EnvironmentMap
                     
                 else
                     if (exist('format', 'var')>0 && ...
+                            ~isempty(format) && ...
                             e.format ~= EnvironmentMapFormat.format(format))
                         warning('EnvironmentMap:badformat', ...
                             ['Over-riding input format (%s) with the one' ...
@@ -223,9 +237,11 @@ classdef EnvironmentMap
                         'Omnidirectional format requires calibration model');
                     
                     % resize according to dimensions in the model
-                    e.data = imresize(e.data, [size(e.data, 1), ...
-                        size(e.data,1)*e.calibrationModel.width/...
-                        e.calibrationModel.height]);
+                    if ~isempty(e.data)
+                        e.data = imresize(e.data, [size(e.data, 1), ...
+                            size(e.data,1)*e.calibrationModel.width/...
+                            e.calibrationModel.height]);
+                    end
                     
                 otherwise
                     assert(isempty(hfov), ...
