@@ -28,6 +28,7 @@ classdef EnvironmentMap
         
         % date number 
         dateNumber = [];
+        UTC = [];
         
         % exposure value
         exposureValue = [];
@@ -89,6 +90,7 @@ classdef EnvironmentMap
             
             % date/time information (in datenum format. See help datevec)
             dateNum = [];
+            utc = [];
             
             bgColor = 0;
             
@@ -101,6 +103,7 @@ classdef EnvironmentMap
             
             e.calibrationModel = calibModel;
             e.dateNumber = dateNum;
+            e.UTC = utc;
             e.exposureValue = ev;
                         
             if ischar(input)
@@ -1281,6 +1284,7 @@ classdef EnvironmentMap
                     date = xmlInfo.date;
                     e.dateNumber = datenum(date.year, date.month, date.day, ...
                         date.hour, date.minute, date.second);
+                    e.UTC = date.utc;
                 end
                 
                 % check for exposure value information
@@ -1318,7 +1322,7 @@ classdef EnvironmentMap
                 [y,m,d,h,mn,s] = datevec(e.dateNumber);
                 
                 xmlInfo.date = struct('year', y, 'month', m, 'day', d, ...
-                    'hour', h, 'minute', mn, 'second', s);
+                    'hour', h, 'minute', mn, 'second', s, 'utc', e.UTC);
             end
             
             % store exposure value
