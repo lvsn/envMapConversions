@@ -102,23 +102,30 @@ else
             error('Error: Input euler angle data vector is not Nx3')            
         end
         %identify singularities        
-        if rot_1_in==rot_3_in, %Type 2 rotation (first and third rotations about same axis)
-            if INPUT(:,2)<=zeros(size(INPUT,1),1) | INPUT(:,2)>=180*ones(size(INPUT,1),1),  %confirm second angle within range
-                error('Error: Second input Euler angle(s) outside 0 to 180 degree range')
-            elseif abs(INPUT(:,2))<2*ones(size(INPUT,1),1) | abs(INPUT(:,2))>178*ones(size(INPUT,1),1),  %check for singularity
-                if ichk==1,
-                    errordlg('Warning: Input Euler angle rotation(s) near a singularity.               Second angle near 0 or 180 degrees.')
-                end
-            end
-        else    %Type 1 rotation (all rotations about each of three axes)
-            if abs(INPUT(:,2))>=90*ones(size(INPUT,1),1), %confirm second angle within range
-                error('Error: Second input Euler angle(s) outside -90 to 90 degree range')
-            elseif abs(INPUT(:,2))>88*ones(size(INPUT,1),1),  %check for singularity
-                if ichk==1,
-                    errordlg('Warning: Input Euler angle(s) rotation near a singularity.               Second angle near -90 or 90 degrees.')
-                end
-            end
-        end    
+        input_size = size(INPUT); 
+        N = input_size(1); 
+
+        % Identify singularities (second Euler angle out of range) 
+        EA2 = INPUT(:,2); % (Nx1) 2nd Euler angle(s) 
+        ZEROS = zeros(N,1); % (Nx1) 
+        ONES = ones(N,1); % (Nx1) 
+        if rot_1_in==rot_3_in % Type 2 rotation (1st and 3rd rotations about same axis) 
+            if any(EA2>180*ONES) || any(EA2<ZEROS)
+                error('Second input Euler angle(s) outside 0 to 180 degree range') 
+            elseif any(EA2>=178*ONES) || any(EA2<=2*ONES)
+                if ichk==1 
+                    errordlg('Warning: Second input Euler angle(s) near a singularity (0 or 180 degrees).') 
+                end 
+            end 
+        else % Type 1 rotation (rotations about three distinct axes) 
+            if any(abs(EA2)>=90*ONES) 
+                error('Second input Euler angle(s) outside -90 to 90 degree range') 
+            elseif any(abs(EA2)>88*ONES) 
+                if ichk==1 
+                    errordlg('Warning: Second input Euler angle(s) near a singularity (-90 or 90 degrees).') 
+                end 
+            end 
+        end   
     end
     if o_type==4,   %if output type is Euler angles, determine order of rotations
         EULER_order_out=str2double(CONVERSION(1,length-2:length));
@@ -228,7 +235,7 @@ switch INPUT_TYPE
         if sqrt(INPUT(:,1).^2+INPUT(:,2).^2+INPUT(:,3).^2)-ones(N,1)>tol*ones(N,1),  %check that input m's constitute unit vector
             error('Input euler vector(s) components do not constitute a unit vector')            
         end
-        if MU<zeros(N,1) | MU>2*pi*ones(N,1), %check if rotation about euler vector is between 0 and 360
+        if MU<zeros(N,1) || MU>2*pi*ones(N,1), %check if rotation about euler vector is between 0 and 360
             error('Input euler rotation angle(s) not between 0 and 360 degrees')
         end
         Q=[INPUT(:,1).*sin(MU/2),INPUT(:,2).*sin(MU/2),INPUT(:,3).*sin(MU/2),cos(MU/2)];   %quaternion
