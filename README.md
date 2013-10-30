@@ -100,10 +100,6 @@ This software package depends on the following (included) 3rd-party libraries
 - `SpinCalc` for rotation representations, by John Fuller 
 ([http://www.mathworks.com/matlabcentral/fileexchange/20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors](http://www.mathworks.com/matlabcentral/fileexchange/20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors))
 
-- `stringdist` for string distance computation, by Eduard Polityko 
-([http://www.mathworks.com/matlabcentral/fileexchange/17585-calculation-of-distance-between-strings](http://www.mathworks.com/matlabcentral/fileexchange/17585-calculation-of-distance-between-strings))
-
-
 Notes
 -----
 
