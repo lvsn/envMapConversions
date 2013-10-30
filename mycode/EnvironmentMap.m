@@ -565,6 +565,83 @@ classdef EnvironmentMap
             e = e.interpolate(u, v, valid);
         end
         
+        function i = rectifiedCrop(e, center, imgWidth, imgHeight, varargin)
+            % Returns a rectified crop of the environment map
+            %
+            %   i = e.rectifiedCrop(center, imgWidth, imgHeight, ...)
+            %
+            %   'center' can be [az, el] (radians) or [x, y, z]. 
+            %
+            %   Either 'focalLength', or 'fov' must be given as optional
+            %   input to specify the focal length or field of view (along 
+            %   longest direction).
+            %
+            % Assumes simple pinhold camera model.
+            %
+            
+            focalLength = [];
+            fov = []; % in degrees
+            
+            parseVarargin(varargin{:});
+            
+            if isempty(focalLength) && isempty(fov)
+                error('EnvironmentMap:rectifiedCrop', ...
+                    'Provide either ''focalLength'' or ''hFov''');
+            end
+            
+            if ~isempty(focalLength) && ~isempty(fov)
+                error('EnvironmentMap:rectifiedCrop', ...
+                    'Provide either ''focalLength'' or ''hFov'', not both.');
+            end
+            
+            if length(center) == 3
+                center = IlluminationModel.cart2sph(center(1), ...
+                    center(2), center(3));
+            end
+            
+            assert(length(center) == 2, '''center'' must be [az, el]');
+            % center is [az, el]
+            
+            cols = linspace(-imgWidth/2, imgWidth/2, imgWidth*2+1); 
+            cols = cols(2:2:end);
+            rows = linspace(-imgHeight/2, imgHeight/2, imgHeight*2+1); 
+            rows = rows(2:2:end);
+
+            [u, v] = meshgrid(cols, rows);
+            
+            % normalize focalLength
+            if ~isempty(fov)
+                focalLength = (max(imgWidth, imgHeight)/2) ./ tand(fov/2);
+            end
+
+            x = -u;
+            y = -v;
+            z = focalLength .* ones(size(u));
+            
+            % normalize
+            pts = cat(3, x, y, z);
+            pts = pts ./ repmat(sqrt(sum(pts.^2, 3)), [1 1 3]);
+            
+            % permute to have [x x x ...; y y y ...; z z z ...];
+            pts = permute(pts, [3 1 2]);
+            pts = reshape(pts, 3, []);
+            
+            % rotate points by desired image center
+            center = center.*180./pi;
+            R = SpinCalc('EA213toDCM', [center(1) -center(2) 0], 1e-3, 0);
+            ptsR = R'*pts;
+            
+            % get corresponding coordinates in the image
+            [uR, vR] = e.world2image(ptsR(1,:), ptsR(2,:), ptsR(3,:));
+            
+            uR = reshape(uR, imgHeight, imgWidth);
+            vR = reshape(vR, imgHeight, imgWidth);
+            
+            i = e.interpolate(uR, vR, true(size(uR)));
+            i = i.data;
+            
+        end
+        
         function e = interpolate(e, u, v, valid)
             % Interpolate to get the desired pixel values
             envMap = zeros(size(u, 1), size(u, 2), e.nbands);
