@@ -343,6 +343,10 @@ classdef EnvironmentMap
             e.data = double(e.data);
         end
         
+        function e = gt(e,a)
+            e.data = e.data > a;
+        end
+        
         function varargout = size(e, varargin)
             varargout{:} = size(e.data, varargin{:}); 
         end
@@ -381,6 +385,7 @@ classdef EnvironmentMap
             m = mean(reshape(e.data(valid(:,:,ones(1, e.nbands))), [], e.nbands), 1);
         end
         
+        
         function m = times(a1, a2)
             % check which one of the arguments is an Environment Map
             if isa(a1, 'EnvironmentMap')
@@ -397,6 +402,21 @@ classdef EnvironmentMap
             if ~isempty(m.exposureValue)
                 m.exposureValue = m.exposureValue - log2(f);
             end
+        end
+        
+        function m = plus(a1, a2)
+            if isa(a1,'EnvironmentMap') && isa(a2,'EnvironmentMap')
+                m=a1;
+                m.data=a1.data+a2.data;
+            elseif isa(a1,'EnvironmentMap') && ~isa(a2,'EnvironmentMap')
+                m=a1;
+                m.data=a1.data+a2;
+            elseif isa(a2,'EnvironmentMap') && ~isa(a1,'EnvironmentMap')
+                m=a2;
+                m.data=a2.data+a1;
+            else                
+                m=[];
+            end                
         end
         
         function e = rdivide(e, f)
