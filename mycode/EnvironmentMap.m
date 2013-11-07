@@ -648,7 +648,7 @@ classdef EnvironmentMap
             
             % rotate points by desired image center
             center = center.*180./pi;
-            R = SpinCalc('EA213toDCM', [center(1) -center(2) 0], 1e-3, 0);
+            R = SpinCalc('EA231toDCM', [center(1) 0 -center(2)], 1e-3, 0);
             ptsR = R'*pts;
             
             % get corresponding coordinates in the image
