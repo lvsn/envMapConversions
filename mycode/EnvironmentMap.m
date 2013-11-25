@@ -374,10 +374,16 @@ classdef EnvironmentMap
         
         function imwrite(e, varargin)
             % write image data
-            hdr_imwrite(e.data, varargin{:});
+            ext = hdr_imwrite(e.data, varargin{:});
             
-            % also save metadata file containing additional information.
-            e.writeMetadataFile(varargin{1});
+            switch ext
+                case {'.hdr', '.exr', '.tif', '.tiff'}
+                    % we're saving in HDR: 
+                    % also save metadata file containing additional information.
+                    e.writeMetadataFile(varargin{1});
+                otherwise
+                    % don't save the metadata
+            end
         end
         
         function m = mean(e)
@@ -399,8 +405,11 @@ classdef EnvironmentMap
             end
             
             % adapt the exposure value
-            if ~isempty(m.exposureValue)
+            if ~isempty(m.exposureValue) && isscalar(f)
                 m.exposureValue = m.exposureValue - log2(f);
+            elseif isscalar(f)
+                warning('EnvironmentMap:times', ...
+                    'Not a scalar, so keeping the EV');
             end
         end
         
@@ -423,9 +432,13 @@ classdef EnvironmentMap
             e.data = e.data ./ f;
             
             % adapt the exposure value
-            if ~isempty(e.exposureValue)
+            if ~isempty(e.exposureValue) && isscalar(f)
                 e.exposureValue = e.exposureValue + log2(f);
+            elseif isscalar(f)
+                warning('EnvironmentMap:times', ...
+                    'Not a scalar, so keeping the EV');
             end
+
         end
         
         function e = reExpose(e, tgtEV)
@@ -439,7 +452,7 @@ classdef EnvironmentMap
         end
         
         function e = power(e, y)
-            e.data = e.data .^ y;
+            e.data = max(e.data, 0) .^ y;
             
             % this should invalidate the exposure value
             if ~isempty(e.exposureValue)
