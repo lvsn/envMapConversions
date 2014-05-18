@@ -134,7 +134,9 @@ classdef EnvironmentMap
                     imreadFun = @(varargin)[];
                 end
                 
+                warnState = warning('off', 'hdr_imread:autoRotate');
                 e.data = imreadFun(filename);
+                warning(warnState);
                 
                 % check for accompanying metadata
                 [e, exists] = e.readMetadataFile(filename);
@@ -423,7 +425,7 @@ classdef EnvironmentMap
             % adapt the exposure value
             if ~isempty(m.exposureValue) && isscalar(f)
                 m.exposureValue = m.exposureValue - log2(f);
-            elseif isscalar(f)
+            elseif ~isscalar(f)
                 warning('EnvironmentMap:times', ...
                     'Not a scalar, so keeping the EV');
             end
