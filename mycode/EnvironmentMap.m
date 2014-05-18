@@ -355,6 +355,14 @@ classdef EnvironmentMap
             e.data = e.data > a;
         end
         
+        function e = max(e, varargin)
+            e.data = max(e.data, varargin{:});
+        end
+        
+        function e = min(e, varargin)
+            e.data = min(e.data, varargin{:});
+        end
+        
         function varargout = size(e, varargin)
             varargout{:} = size(e.data, varargin{:}); 
         end
