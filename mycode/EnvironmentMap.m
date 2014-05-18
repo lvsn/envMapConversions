@@ -98,6 +98,9 @@ classdef EnvironmentMap
             % only the meta-data)... is this a hack or is this actually
             % useful?
             loadData = true;
+            
+            % clamp the data to 0?
+            clampData = true;
                         
             parseVarargin(varargin{:});
             
@@ -265,6 +268,11 @@ classdef EnvironmentMap
             if ~isequal(e.backgroundColor, zeros(1, e.nbands))
                 % non-default background color
                 e = e.setBackgroundColor(bgColor(ones(1, e.nbands)));
+            end
+            
+            if clampData
+                % clamp to 0
+                e.data = max(e.data, 0);
             end
         end
         
