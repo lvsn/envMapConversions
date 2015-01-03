@@ -500,6 +500,12 @@ classdef EnvironmentMap
         
         function omega = solidAngles(e)
             % Computes the solid angle subtended by each pixel
+            if e.format == EnvironmentMapFormat.Sphere || ...
+                e.format == EnvironmentMapFormat.SkySphere
+                warning('EnvironmentMap:solidAngles', ...
+                    ['Solid angles do not seem to work with the ''Sphere'' '...
+                    ' and the ''SkySphere'' environment map formats']);
+            end
             
             % Compute coordinates of pixel borders
             cols = linspace(0, 1, e.ncols+1);
@@ -886,7 +892,8 @@ classdef EnvironmentMap
         
         function [u, v] = world2angular(~, x, y, z)
             % world -> angular
-            rAngular = acos(-z) ./ (2.*pi.*sqrt(x.^2 + y.^2));
+            denum = (2.*pi.*sqrt(x.^2 + y.^2))+eps;
+            rAngular = acos(-z) ./ denum;
             v = 1/2-rAngular.*y;
             u = 1/2+rAngular.*x;
         end
@@ -1022,7 +1029,8 @@ classdef EnvironmentMap
         
         function [u, v] = world2skysphere(~, x, y, z)
             % world -> skysphere
-            r = sin(.5.*acos(y)) ./ (sqrt(x.^2+z.^2)) * 2/sqrt(2);
+            denum = (sqrt(x.^2+z.^2))+eps;
+            r = sin(.5.*acos(y)) ./ denum * 2/sqrt(2);
             
             u = .5*r.*x+.5;
             v = 1-(.5*r.*z+.5);
@@ -1030,7 +1038,8 @@ classdef EnvironmentMap
         
         function [u, v] = world2sphere(~, x, y, z)
             % world -> sphere
-            r = sin(.5.*acos(-z)) ./ (2.*sqrt(x.^2+y.^2));
+            denum = (2.*sqrt(x.^2+y.^2))+eps;
+            r = sin(.5.*acos(-z)) ./ denum;
             
             u = .5+r.*x;
             v = .5-r.*y;
