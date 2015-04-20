@@ -11,9 +11,11 @@ Features
 ========
 
 The main features of this package are:
-1. Support for many different environment map formats
-2. Easy integration of additional formats
-3. Automatic computation of solid angles
+
+1. Support for many different environment map formats;
+2. Easy integration of additional formats;
+3. Automatic computation of solid angles;
+4. Intuitive integration with Matlab with overrides of common functions such as `imresize`, `imshow`, etc.
 
 Formats
 =======
@@ -30,16 +32,19 @@ distortions and is relatively compact;
 
 - *Cube*: 6-faced representation. Commonly used. 
 
+- *Octahedral*: projection of a sphere onto an octahedron. 
+
 - *SkyAngular*: convenient way to visualize the top hemisphere of the 
 environment map only, with minimal distorsions. _Warning_: converting to this 
 format will entirely drop the bottom half of the environment map!
 
-- *Octahedral*: projection of a sphere onto an octahedron. 
+- *SkyOctahedral*: projection of the top hemisphere onto the top half of an octahedron. _Warning_: converting to this 
+format will entirely drop the bottom half of the environment map!
 
 Coordinates
 ===========
 
-The world coordinates `(dx,dy,dz)` have the following reference frame:
+The world coordinates `(x,y,z)` have the following reference frame:
 
 <pre><code>
      ^ y
