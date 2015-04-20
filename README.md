@@ -7,6 +7,14 @@ following the book:
 
 Please see the book for more details. 
 
+Features
+========
+
+The main features of this package are:
+1. Support for many different environment map formats
+2. Easy integration of additional formats
+3. Automatic computation of solid angles
+
 Formats
 =======
 
