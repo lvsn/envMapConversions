@@ -98,9 +98,6 @@ allows conversion from strings. For example:
 
     $ fmt = EnvironmentMapFormat.format('sphere');
 
-Strings don't have to match the format perfectly, the closest string (according
-to the Levenshtein distance) is used. 
-
 Dependencies
 ============
 
