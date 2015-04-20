@@ -94,8 +94,7 @@ Dependencies
 This software package depends on the following (included) 3rd-party libraries
 (see the `3rd_party` directory):
 
-- `MatlabEXR` for EXR support, by Kimo Johnson 
-([http://www.mit.edu/~kimo/software/](http://www.mit.edu/~kimo/software/))
+- [hdrutils](https://github.com/lvsn/hdrutils)
 
 - `SpinCalc` for rotation representations, by John Fuller 
 ([http://www.mathworks.com/matlabcentral/fileexchange/20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors](http://www.mathworks.com/matlabcentral/fileexchange/20696-function-to-convert-between-dcm-euler-angles-quaternions-and-euler-vectors))
