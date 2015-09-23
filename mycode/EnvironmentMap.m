@@ -134,10 +134,6 @@ classdef EnvironmentMap
                     imreadFun = @(varargin)[];
                 end
                 
-                warnState = warning('off', 'hdr_imread:autoRotate');
-                e.data = imreadFun(filename);
-                warning(warnState);
-                
                 % check for accompanying metadata
                 [e, exists] = e.readMetadataFile(filename);
                 if ~exists
@@ -161,6 +157,10 @@ classdef EnvironmentMap
                     
                     format = e.format;
                 end
+                
+                warnState = warning('off', 'hdr_imread:autoRotate');
+                e.data = imreadFun(filename);
+                warning(warnState);
                 
             elseif isscalar(input)
                 % we're given the vertical dimension only --> create
