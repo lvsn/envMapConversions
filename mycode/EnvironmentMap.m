@@ -652,8 +652,9 @@ classdef EnvironmentMap
             end
             
             if length(center) == 3
-                center = IlluminationModel.cart2sph(center(1), ...
+                [az, el] = EnvironmentMap.cart2sph(center(1), ...
                     center(2), center(3));
+                center = [az el];
             end
             
             assert(length(center) == 2, '''center'' must be [az, el]');
@@ -1519,6 +1520,48 @@ classdef EnvironmentMap
                     fprintf('** FAILED! (factor = %.2f*pi, desired = %.2f*pi) ** \n', ...
                         factor, tgtFactor);
                 end
+            end
+        end
+        
+        function [x, y, z] = sph2cart(az, el)
+            % Conversion from spherical to cartesian coordinates in our
+            % reference frame
+            %
+            %   [x, y, z] = sph2cart(az, el)
+            %
+            %   
+            %   pos = sph2cart(az, el)
+            %
+            %   Outputs 3xN 3-D points
+            %
+            
+            [z,x,y] = sph2cart(az, el, 1);
+            
+            if nargout == 1
+                x = cat(1, row(x), row(y), row(z));
+            end
+        end
+            
+        function [az, el] = cart2sph(x, y, z)
+            % Conversion from cartesian to spherical coordinates in our
+            % reference frame
+            % 
+            %   [az, el] = cart2sph(x, y, z)
+            %
+            %   Takes in x, y, z independently  
+            %
+            %   [az, el] = cart2sph(pt)
+            %
+            %   Version which takes in N 3-D points (3xN) directly
+            %
+            
+            if nargin == 1
+                assert(size(x, 1) == 3, ...
+                    'cart2sph:input', 'Need 3xN vector.');
+                [az, el] = cart2sph(x(3,:), x(1,:), x(2,:));
+            
+            else
+                [az, el] = cart2sph(z, x, y);
             end
         end
         
