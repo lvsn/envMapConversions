@@ -79,7 +79,7 @@ environment map in the latitude-longitude format):
 
 4. Convert to the 'angular' representation:
 
-        $ envmap = envmap.convertTo('sphere');
+        $ envmap = envmap.convertTo('angular');
         $ imshow(envmap);
 
 5. Rotate the environment map (now in angular representation) by 90 degrees 
