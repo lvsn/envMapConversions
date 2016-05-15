@@ -67,27 +67,33 @@ of environment maps very easy! Here's an example:
 1. Load an environment map from file (this assumes the file stores the 
 environment map in the latitude-longitude format):
 
-        $ envmap = EnvironmentMap('path/to/file', 'latlong');
+          envmap = EnvironmentMap('path/to/file', 'latlong');
 
 2. Resize the environment map:
 
-        $ envmap = imresize(envmap, [500 NaN]);
+          envmap = imresize(envmap, [500 NaN]);
 
 3. Display the environment map:
 
-        $ imshow(envmap);
+          imshow(envmap);
 
 4. Convert to the 'angular' representation:
 
-        $ envmap = envmap.convertTo('angular');
-        $ imshow(envmap);
+          envmap = envmap.convertTo('angular');
+          imshow(envmap);
 
 5. Rotate the environment map (now in angular representation) by 90 degrees 
 around the x-axis (see `SpinCalc.m` in the `3rd_party` directory for more on
 the nomenclature for representing rotations):
 
-        $ envmap = envmap.rotate('EA213', [90 0 0]);
-        $ imshow(envmap);
+          envmap = envmap.rotate('EA213', [90 0 0]);
+          imshow(envmap);
+        
+6. Get the (x,y,z) directions corresponding to each pixel in the environment map:
+
+          [x,y,z,valid] = envmap.worldCoordinates();
+          
+     The `valid` variable indicates which pixels in the environment map correspond to "valid" directions. For example, the pixels outside the circle in the "angular" representation are invalid, while there are no invalid pixels in the "latlong" representation.
 
 The EnvironmentMapFormat class
 ------------------------------
