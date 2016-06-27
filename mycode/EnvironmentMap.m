@@ -153,6 +153,7 @@ classdef EnvironmentMap
                             ['Over-riding input format (%s) with the one' ...
                             ' found in the meta-data file (%s)'], ...
                             char(format), char(e.format));
+                        e.format = format;
                     end
                     
                     format = e.format;
