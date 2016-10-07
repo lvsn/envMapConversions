@@ -337,6 +337,15 @@ classdef EnvironmentMap
             end
         end
         
+        % overloading imshowHDR, in case someone calls that directly
+        function varargout = imshowHDR(varargin)
+            if nargout > 0
+                varargout{:} = imshow(varargin{:});
+            else
+                imshow(varargin{:});
+            end
+        end
+        
         function imagesc(e, varargin)
             imagesc(e.data, varargin{:});
         end
