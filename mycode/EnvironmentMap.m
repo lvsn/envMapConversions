@@ -249,7 +249,7 @@ classdef EnvironmentMap
                     if ~isempty(e.data)
                         e.data = imresize(e.data, [size(e.data, 1), ...
                             size(e.data,1)*e.calibrationModel.width/...
-                            e.calibrationModel.height]);
+                            e.calibrationModel.height], 'bilinear');
                     end
                     
                 otherwise
@@ -613,7 +613,7 @@ classdef EnvironmentMap
             if tgtFormat == e.format
                 % we already have the right format! 
                 % Let's make sure we have the right size
-                e = imresize(e, [tgtDim NaN]);
+                e = imresize(e, [tgtDim NaN], 'bilinear');
                 return;
             end
             
