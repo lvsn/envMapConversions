@@ -170,6 +170,9 @@ classdef EnvironmentMap
                     case EnvironmentMapFormat.LatLong
                         e.data = zeros(input, input*2);
                         
+                    case EnvironmentMapFormat.SkyLatLong
+                        e.data = zeros(input, input*4);
+                        
                     case EnvironmentMapFormat.Cube
                         e.data = zeros(input, round(3/4*input));
                         
@@ -613,7 +616,7 @@ classdef EnvironmentMap
             if tgtFormat == e.format
                 % we already have the right format! 
                 % Let's make sure we have the right size
-                e = imresize(e, [tgtDim NaN], 'bilinear');
+                e = imresize(e, [tgtDim NaN]);
                 return;
             end
             
@@ -787,6 +790,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.LatLong
                     [u, v] = e.world2latlong(x, y, z);
                     
+                case EnvironmentMapFormat.SkyLatLong
+                    [u, v] = e.world2skylatlong(x, y, z);
+                
                 case EnvironmentMapFormat.Angular
                     [u, v] = e.world2angular(x, y, z);
                     
@@ -847,6 +853,9 @@ classdef EnvironmentMap
                 case EnvironmentMapFormat.LatLong
                     [x, y, z, valid] = e.latlong2world(u, v);
                     
+                case EnvironmentMapFormat.SkyLatLong
+                    [x, y, z, valid] = e.skylatlong2world(u, v);
+                    
                 case EnvironmentMapFormat.Angular
                     [x, y, z, valid] = e.angular2world(u, v);
                     
@@ -900,6 +909,14 @@ classdef EnvironmentMap
             
             u = u./2; % because we want [0,1] interval
         end
+        
+        function [u, v] = world2skylatlong(~, x, y, z)
+            % world -> lat-long
+            u = 1 + (1/pi) .* atan2(x, -z);
+            v = (1/pi) .* acos(y) ./ 2;
+            
+            u = u./2; % because we want [0,1] interval
+        end        
         
         function [u, v] = world2angular(~, x, y, z)
             % world -> angular
@@ -1137,6 +1154,20 @@ classdef EnvironmentMap
             % lat-long -> world
             thetaLatLong = pi.*(u-1);
             phiLatLong = pi.*v;
+            
+            x = sin(phiLatLong).*sin(thetaLatLong);
+            y = cos(phiLatLong);
+            z = -sin(phiLatLong).*cos(thetaLatLong);
+            
+            valid = true(size(x));
+        end
+        
+        function [x, y, z, valid] = skylatlong2world(~, u, v)
+            u = u*2;
+            
+            % lat-long -> world
+            thetaLatLong = pi.*(u-1);
+            phiLatLong = pi.*(v/2);
             
             x = sin(phiLatLong).*sin(thetaLatLong);
             y = cos(phiLatLong);

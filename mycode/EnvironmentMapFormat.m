@@ -19,7 +19,7 @@ classdef EnvironmentMapFormat
     %       https://sites.google.com/site/scarabotix/ocamcalib-toolbox
     
     enumeration
-        LatLong, Angular, SkyAngular, Cube, Octahedral, SkyOctahedral, ...
+        LatLong, SkyLatLong, Angular, SkyAngular, Cube, Octahedral, SkyOctahedral, ...
             Sphere, SkySphere, Fisheye, Stereographic, Omnidirectional
     end
     
